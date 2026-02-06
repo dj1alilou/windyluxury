@@ -1,7 +1,7 @@
 // Admin Dashboard JavaScript - Express API Version
 // Configuration
 const CONFIG = {
-  API_BASE: "http://localhost:4000/api",
+  API_BASE: "https://windy-luxury.onrender.com/api",
 };
 
 // Default categories
