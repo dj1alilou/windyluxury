@@ -1519,10 +1519,11 @@ function setupEventListeners() {
       const products = shoppingCart.map((item) => ({
         id: item.id,
         title: item.title,
+        image: item.image,
         color: item.selectedColor,
         quantity: item.quantity,
         price: item.price,
-        size: size,
+        size: item.selectedSize,
       }));
 
       const orderData = {
@@ -1538,7 +1539,6 @@ function setupEventListeners() {
         date: new Date().toISOString(),
         wilaya: wilaya,
         commune: commune,
-        size: size,
         notes: "Commande depuis le panier",
       };
 
@@ -1657,6 +1657,7 @@ function setupEventListeners() {
           {
             id: currentProduct.id,
             title: currentProduct.title,
+            image: currentProduct.image,
             quantity: 1,
             price: productPrice,
             size: size,
@@ -1670,7 +1671,6 @@ function setupEventListeners() {
         date: new Date().toISOString(),
         wilaya: wilaya,
         commune: commune,
-        size: size,
         notes: "Commande individuelle depuis le site",
       };
 
