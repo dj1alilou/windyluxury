@@ -556,7 +556,8 @@ async function handleProductSubmit(e) {
   const stock = document.getElementById("productStock").value;
   const description = document.getElementById("productDescription").value;
   const featured = document.getElementById("productFeatured").value;
-  const sizesInput = document.getElementById("productSizes").value;
+  const sizesElement = document.getElementById("productSizes");
+  const sizesInput = sizesElement ? sizesElement.value : "";
   const imageFile = document.getElementById("productImage").files[0];
 
   if (!name) {
@@ -602,10 +603,13 @@ async function handleProductSubmit(e) {
     let response;
     if (editingProductId) {
       formData.append("id", editingProductId);
-      response = await fetch(`${CONFIG.API_BASE}/products/${editingProductId}`, {
-        method: "PUT",
-        body: formData,
-      });
+      response = await fetch(
+        `${CONFIG.API_BASE}/products/${editingProductId}`,
+        {
+          method: "PUT",
+          body: formData,
+        },
+      );
     } else {
       formData.append("id", Date.now().toString());
       formData.append("createdAt", new Date().toISOString());
