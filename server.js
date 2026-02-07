@@ -26,6 +26,12 @@ async function connectMongoDB() {
     await mongoClient.connect();
     db = mongoClient.db("windyluxury");
     console.log("✅ Connected to MongoDB Atlas");
+
+    // Create indexes for images collection
+    await db
+      .collection("images")
+      .createIndex({ filename: 1 }, { unique: true });
+
     return true;
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error.message);
@@ -35,30 +41,124 @@ async function connectMongoDB() {
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "50mb" })); // Increase limit for Base64 images
 app.use(express.static(path.join(__dirname)));
 
-// Serve uploaded images
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-// Configure multer for multiple image uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadsDir = path.join(__dirname, "uploads");
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
+// Configure multer for memory storage (we'll store in MongoDB)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit per file
 });
 
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit per file
+// ==================== IMAGE STORAGE IN MONGODB ====================
+
+// Store image in MongoDB and return data URL
+async function storeImageInMongoDB(file) {
+  if (!db) return null;
+
+  try {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const filename = uniqueSuffix + path.extname(file.originalname);
+    const mimeType = file.mimetype;
+
+    // Create data URL for direct embedding
+    const dataUrl = `data:${mimeType};base64,${file.buffer.toString("base64")}`;
+
+    // Store in MongoDB
+    await db.collection("images").insertOne({
+      filename,
+      mimeType,
+      size: file.size,
+      data: file.buffer,
+      dataUrl,
+      createdAt: new Date().toISOString(),
+    });
+
+    return {
+      filename,
+      dataUrl,
+      mimeType,
+      size,
+    };
+  } catch (error) {
+    console.error("Error storing image in MongoDB:", error);
+    return null;
+  }
+}
+
+// Get image from MongoDB
+async function getImageFromMongoDB(filename) {
+  if (!db) return null;
+
+  try {
+    const image = await db.collection("images").findOne({ filename });
+    return image;
+  } catch (error) {
+    console.error("Error getting image from MongoDB:", error);
+    return null;
+  }
+}
+
+// ==================== IMAGE API ENDPOINTS ====================
+
+// Upload single image
+app.post("/api/images/upload", upload.single("image"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No image provided" });
+    }
+
+    const result = await storeImageInMongoDB(req.file);
+
+    if (result) {
+      res.json({
+        success: true,
+        ...result,
+      });
+    } else {
+      res.status(500).json({ error: "Failed to store image" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get image as data URL
+app.get("/api/images/:filename", async (req, res) => {
+  try {
+    const image = await getImageFromMongoDB(req.params.filename);
+
+    if (image) {
+      res.json({
+        filename: image.filename,
+        mimeType: image.mimeType,
+        size: image.size,
+        dataUrl: image.dataUrl,
+      });
+    } else {
+      res.status(404).json({ error: "Image not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Serve image directly with proper headers
+app.get("/images/:filename", async (req, res) => {
+  try {
+    const image = await getImageFromMongoDB(req.params.filename);
+
+    if (image) {
+      res.set("Content-Type", image.mimeType);
+      res.set("Content-Length", image.size);
+      res.set("Cache-Control", "public, max-age=31536000");
+      res.send(image.data);
+    } else {
+      res.status(404).send("Image not found");
+    }
+  } catch (error) {
+    res.status(500).send("Error loading image");
+  }
 });
 
 // Database file path (fallback)
@@ -223,10 +323,15 @@ app.get("/api/products", async (req, res) => {
 // POST create product with multiple images
 app.post("/api/products", upload.array("images", 5), async (req, res) => {
   try {
-    // Process uploaded images
+    // Process uploaded images - store in MongoDB
     let images = [];
     if (req.files && req.files.length > 0) {
-      images = req.files.map((file) => `/uploads/${file.filename}`);
+      for (const file of req.files) {
+        const imageData = await storeImageInMongoDB(file);
+        if (imageData) {
+          images.push(imageData.dataUrl); // Store data URL directly
+        }
+      }
     }
 
     // If existing images were passed as JSON string, merge them
@@ -251,8 +356,8 @@ app.post("/api/products", upload.array("images", 5), async (req, res) => {
       price: parseFloat(req.body.price) || 0,
       stock: parseInt(req.body.stock) || 0,
       description: req.body.description || "",
-      image: mainImage, // Main image for backward compatibility
-      images: images, // All images array
+      image: mainImage, // Data URL
+      images: images, // Array of data URLs
       status: req.body.status || "active",
       createdAt: new Date().toISOString(),
     };
@@ -293,10 +398,15 @@ app.put("/api/products/:id", upload.array("images", 5), async (req, res) => {
       } catch (e) {}
     }
 
-    // Process new uploaded images
+    // Process new uploaded images - store in MongoDB
     let newImages = [];
     if (req.files && req.files.length > 0) {
-      newImages = req.files.map((file) => `/uploads/${file.filename}`);
+      for (const file of req.files) {
+        const imageData = await storeImageInMongoDB(file);
+        if (imageData) {
+          newImages.push(imageData.dataUrl);
+        }
+      }
     }
 
     // Merge with existing images

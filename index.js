@@ -11,8 +11,12 @@ const CONFIG = {
 // Helper function to convert relative image URLs to full backend URLs
 function getFullImageUrl(imagePath) {
   if (!imagePath) return null;
-  // If already a full URL, return as is
-  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+  // If already a data URL or full URL, return as is
+  if (
+    imagePath.startsWith("data:") ||
+    imagePath.startsWith("http://") ||
+    imagePath.startsWith("https://")
+  ) {
     return imagePath;
   }
   // Prepend backend URL for relative paths
