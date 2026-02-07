@@ -78,7 +78,7 @@ async function storeImageInMongoDB(file) {
       filename,
       dataUrl,
       mimeType,
-      size,
+      size: file.size,
     };
   } catch (error) {
     console.error("Error storing image in MongoDB:", error);
