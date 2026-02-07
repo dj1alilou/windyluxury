@@ -1,7 +1,7 @@
 // windy.luxury - JavaScript pour le site e-commerce en français avec IndexedDB
-// Configuration - Use environment variable or default to localhost
+// Configuration - Uses window.API_BASE for Vercel env variable
 const CONFIG = {
-  API_BASE: import.meta.env.VITE_API_URL || "http://localhost:4000/api",
+  API_BASE: window.API_BASE || "http://localhost:4000/api",
 };
 
 let shoppingCart = [];
