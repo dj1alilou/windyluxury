@@ -2,7 +2,22 @@
 // Configuration - Uses window.API_BASE for Vercel env variable
 const CONFIG = {
   API_BASE: window.API_BASE || "http://localhost:4000/api",
+  // Backend URL for image serving
+  BACKEND_URL: window.API_BASE
+    ? window.API_BASE.replace("/api", "")
+    : "http://localhost:4000",
 };
+
+// Helper function to convert relative image URLs to full backend URLs
+function getFullImageUrl(imagePath) {
+  if (!imagePath) return null;
+  // If already a full URL, return as is
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath;
+  }
+  // Prepend backend URL for relative paths
+  return CONFIG.BACKEND_URL + imagePath;
+}
 
 let shoppingCart = [];
 let selectedDeliveryOption = "home";
@@ -910,9 +925,12 @@ function renderProducts(category, page = 1) {
 
   paginatedProducts.forEach((product) => {
     const isProductAvailable = product.stock > 0;
-    const mainImage = product.image;
+    // Convert relative image paths to full backend URLs
+    const mainImage = getFullImageUrl(product.image);
     // Support both single image and multiple images
-    const images = product.images || (product.image ? [product.image] : []);
+    const images = (
+      product.images || (product.image ? [product.image] : [])
+    ).map(getFullImageUrl);
 
     const productCard = document.createElement("div");
     productCard.className = "product-card";

@@ -3,43 +3,40 @@
   "buildCommand": null,
   "outputDirectory": ".",
   "framework": null,
+  "cleanUrls": false,
+  "trailingSlash": false,
   "routes": [
     {
-      "src": "/admin",
+      "src": "^/admin/?$",
       "dest": "/admin.html"
     },
     {
-      "src": "/uploads/(.*)",
-      "dest": "/uploads/$1"
+      "src": "^/uploads/(.*)$",
+      "dest": "https://windy-luxury-2.onrender.com/uploads/$1",
+      "headers": {
+        "x-vercel-proxy": "render-backend"
+      }
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "https://windy-luxury-2.onrender.com/api/$1",
+      "headers": {
+        "x-vercel-proxy": "render-backend"
+      }
+    },
+    {
+      "src": "/(.*)/",
+      "dest": "/$1/index.html"
+    },
+    {
+      "src": "/(.*[^\\..*])/?$",
+      "dest": "/index.html"
     }
   ],
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Credentials",
-          "value": "true"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
-        }
-      ]
     }
   ]
 }
