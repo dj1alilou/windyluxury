@@ -656,7 +656,7 @@ app.get("/ping", (req, res) => {
 // Auto-ping mechanism - ping itself every 14 minutes (Render sleeps after 15 min of inactivity)
 // Note: This only works if the server has outbound internet access
 function startAutoPing() {
-  const pingInterval = 14 * 60 * 1000; // 14 minutes in milliseconds
+  const pingInterval = 10 * 60 * 1000; // 10 minutes in milliseconds
 
   setInterval(async () => {
     try {

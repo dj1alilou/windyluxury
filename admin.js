@@ -32,7 +32,7 @@ function updateDate() {
   const now = new Date();
   const options = { year: "numeric", month: "long", day: "numeric" };
   document.getElementById("currentDate").textContent = now.toLocaleDateString(
-    "ar-SA",
+    "fr-FR",
     options,
   );
 }
@@ -131,7 +131,7 @@ function handleLogin(e) {
     showDashboard();
     loadAllData();
   } else {
-    showAlert("loginAlert", "بيانات الدخول غير صحيحة", "error");
+    showAlert("loginAlert", "Mot de passe incorrect", "error");
   }
 }
 
@@ -247,7 +247,7 @@ function renderRecentOrders(ordersList) {
 
   if (ordersList.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="6" class="text-center py-8">لا توجد طلبات</td></tr>';
+      '<tr><td colspan="6" class="text-center py-8">Aucune commande</td></tr>';
     return;
   }
 
@@ -282,7 +282,7 @@ function renderLowStockProducts(productsList) {
 
   if (productsList.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="6" class="text-center py-8">لا توجد منتجات منخفضة المخزون</td></tr>';
+      '<tr><td colspan="6" class="text-center py-8">Aucun produit en rupture de stock</td></tr>';
     return;
   }
 
@@ -317,7 +317,7 @@ function renderProductsTable(productsList) {
 
   if (productsList.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="8" class="text-center py-8">لا توجد منتجات</td></tr>';
+      '<tr><td colspan="8" class="text-center py-8">Aucun produit</td></tr>';
     return;
   }
 
@@ -359,7 +359,7 @@ function renderOrdersTable(ordersList) {
 
   if (ordersList.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="7" class="text-center py-8">لا توجد طلبات</td></tr>';
+      '<tr><td colspan="7" class="text-center py-8">Aucune commande</td></tr>';
     return;
   }
 
@@ -369,7 +369,7 @@ function renderOrdersTable(ordersList) {
     <tr>
       <td>${order.id?.slice(-6) || "N/A"}</td>
       <td>${order.customerName || "عميل"}</td>
-      <td>${(order.products || []).length} منتجات</td>
+      <td>${(order.products || []).length} produits</td>
       <td>${formatDate(order.createdAt)}</td>
       <td>${(order.total || 0).toLocaleString()} DA</td>
       <td><span class="status-badge status-${order.status || "pending"}">${getStatusText(
@@ -384,16 +384,16 @@ function renderOrdersTable(ordersList) {
         <select onchange="updateOrderStatus('${
           order.id
         }', this.value)" class="form-control" style="width: auto; padding: 4px 8px;">
-          <option value="pending" ${order.status === "pending" ? "selected" : ""}>قيد الانتظار</option>
+          <option value="pending" ${order.status === "pending" ? "selected" : ""}>En attente</option>
           <option value="processing" ${
             order.status === "processing" ? "selected" : ""
-          }>قيد المعالجة</option>
+          }>En cours</option>
           <option value="completed" ${
             order.status === "completed" ? "selected" : ""
-          }>مكتمل</option>
+          }>Terminé</option>
           <option value="cancelled" ${
             order.status === "cancelled" ? "selected" : ""
-          }>ملغي</option>
+          }>Annulé</option>
         </select>
       </td>
     </tr>
@@ -417,12 +417,12 @@ function showSection(sectionId) {
 
   // Update page title
   const titles = {
-    dashboard: "لوحة التحكم",
-    products: "إدارة المنتجات",
-    orders: "إدارة الطلبات",
-    categories: "إدارة الفئات",
-    customers: "إدارة العملاء",
-    settings: "الإعدادات",
+    dashboard: "Tableau de bord",
+    products: "Gestion des produits",
+    orders: "Gestion des commandes",
+    categories: "Gestion des catégories",
+    customers: "Gestion des clients",
+    settings: "Paramètres",
   };
   document.getElementById("pageTitle").textContent =
     titles[sectionId] || sectionId;
@@ -446,7 +446,7 @@ function updateCategoryFilter() {
   const filter = document.getElementById("categoryFilter");
   if (!filter) return;
 
-  filter.innerHTML = '<option value="">جميع الفئات</option>';
+  filter.innerHTML = '<option value="">Toutes les catégories</option>';
   categories.forEach((cat) => {
     const option = document.createElement("option");
     option.value = cat.name;
@@ -481,8 +481,10 @@ async function refreshProducts() {
 // Product Modal
 function showAddProductModal() {
   editingProductId = null;
-  document.getElementById("productModalTitle").textContent = "إضافة منتج جديد";
-  document.getElementById("productSubmitText").textContent = "إضافة المنتج";
+  document.getElementById("productModalTitle").textContent =
+    "Ajouter un produit";
+  document.getElementById("productSubmitText").textContent =
+    "Ajouter le produit";
   document.getElementById("productForm").reset();
   document.getElementById("productId").value = "";
   document.getElementById("imagePreviews").innerHTML = "";
@@ -509,8 +511,10 @@ function editProduct(productId) {
   if (!product) return;
 
   editingProductId = productId;
-  document.getElementById("productModalTitle").textContent = "تعديل المنتج";
-  document.getElementById("productSubmitText").textContent = "تحديث المنتج";
+  document.getElementById("productModalTitle").textContent =
+    "Modifier le produit";
+  document.getElementById("productSubmitText").textContent =
+    "Mettre à jour le produit";
   document.getElementById("productId").value = productId;
   document.getElementById("productName").value =
     product.name || product.title || "";
@@ -574,7 +578,7 @@ async function handleProductSubmit(e) {
   const existingImages = document.getElementById("existingImages").value;
 
   if (!name) {
-    showAlert("productAlert", "اسم المنتج مطلوب", "error");
+    showAlert("productAlert", "Le nom du produit est requis", "error");
     return;
   }
 
@@ -639,7 +643,7 @@ async function handleProductSubmit(e) {
     if (response.ok) {
       closeModal();
       await refreshProducts();
-      showAlert("productAlert", "تم حفظ المنتج بنجاح", "success");
+      showAlert("productAlert", "Produit enregistré avec succès", "success");
     } else {
       const errorText = await response.text();
       console.error("Server error:", errorText);
@@ -647,13 +651,17 @@ async function handleProductSubmit(e) {
     }
   } catch (error) {
     console.error("Error saving product:", error);
-    showAlert("productAlert", "حدث خطأ أثناء حفظ المنتج", "error");
+    showAlert(
+      "productAlert",
+      "Erreur lors de l'enregistrement du produit",
+      "error",
+    );
   }
 }
 
 // Delete Product
 async function deleteProduct(productId) {
-  if (!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
+  if (!confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) return;
 
   try {
     const response = await fetch(`${CONFIG.API_BASE}/products/${productId}`, {
@@ -667,7 +675,7 @@ async function deleteProduct(productId) {
     }
   } catch (error) {
     console.error("Error deleting product:", error);
-    alert("حدث خطأ أثناء حذف المنتج");
+    alert("Une erreur est survenue lors de la suppression du produit");
   }
 }
 
@@ -683,11 +691,11 @@ function viewOrder(orderId) {
     <div class="flex items-center gap-3 p-2 border-b">
       <img src="${product.image || "https://via.placeholder.com/50"}" alt="${product.title}" class="w-12 h-12 object-cover rounded">
       <div class="flex-1">
-        <p class="font-bold">${product.title || "منتج"}</p>
+        <p class="font-bold">${product.title || "Produit"}</p>
         <p class="text-sm text-gray-600">
           ${product.quantity} × ${(product.price || 0).toLocaleString()} DA
-          ${product.size ? ` | المقاس: ${product.size}` : ""}
-          ${product.color ? ` | اللون: ${product.color}` : ""}
+          ${product.size ? ` | Taille: ${product.size}` : ""}
+          ${product.color ? ` | Couleur: ${product.color}` : ""}
         </p>
       </div>
       <p class="font-bold">${((product.price || 0) * product.quantity).toLocaleString()} DA</p>
@@ -700,43 +708,43 @@ function viewOrder(orderId) {
     <div class="space-y-4">
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <p class="text-sm text-gray-600">رقم الطلب:</p>
+          <p class="text-sm text-gray-600">Numéro de commande:</p>
           <p class="font-bold">${order.id?.slice(-6) || "N/A"}</p>
         </div>
         <div>
-          <p class="text-sm text-gray-600">الحالة:</p>
+          <p class="text-sm text-gray-600">Statut:</p>
           <p><span class="status-badge status-${order.status || "pending"}">${getStatusText(
             order.status,
           )}</span></p>
         </div>
         <div>
-          <p class="text-sm text-gray-600">العميل:</p>
-          <p class="font-bold">${order.customerName || "عميل"}</p>
+          <p class="text-sm text-gray-600">Client:</p>
+          <p class="font-bold">${order.customerName || "Client"}</p>
         </div>
         <div>
-          <p class="text-sm text-gray-600">الهاتف:</p>
+          <p class="text-sm text-gray-600">Téléphone:</p>
           <p class="font-bold">${order.customerPhone || "-"}</p>
         </div>
         <div>
-          <p class="text-sm text-gray-600">الولاية:</p>
+          <p class="text-sm text-gray-600">Wilaya:</p>
           <p class="font-bold">${order.wilaya || "-"}</p>
         </div>
         <div>
-          <p class="text-sm text-gray-600">البلدية:</p>
+          <p class="text-sm text-gray-600">Commune:</p>
           <p class="font-bold">${order.commune || "-"}</p>
         </div>
         <div>
-          <p class="text-sm text-gray-600">المجموع:</p>
+          <p class="text-sm text-gray-600">Total:</p>
           <p class="font-bold text-lg">${(order.total || 0).toLocaleString()} DA</p>
         </div>
         <div>
-          <p class="text-sm text-gray-600">التاريخ:</p>
+          <p class="text-sm text-gray-600">Date:</p>
           <p class="font-bold">${formatDate(order.createdAt)}</p>
         </div>
       </div>
       
       <div class="mt-4">
-        <h4 class="font-bold mb-2">المنتجات:</h4>
+        <h4 class="font-bold mb-2">Produits:</h4>
         <div class="border rounded">
           ${productsHtml}
         </div>
@@ -769,8 +777,10 @@ async function updateOrderStatus(orderId, status) {
 // Category Modal
 function showAddCategoryModal() {
   editingCategoryId = null;
-  document.getElementById("categoryModalTitle").textContent = "إضافة فئة جديدة";
-  document.getElementById("categorySubmitText").textContent = "إضافة الفئة";
+  document.getElementById("categoryModalTitle").textContent =
+    "Ajouter une catégorie";
+  document.getElementById("categorySubmitText").textContent =
+    "Ajouter la catégorie";
   document.getElementById("categoryForm").reset();
   document.getElementById("categoryId").value = "";
   document.getElementById("categoryModal").classList.add("active");
@@ -788,7 +798,7 @@ async function handleCategorySubmit(e) {
   };
 
   if (!categoryData.name) {
-    alert("اسم الفئة مطلوب");
+    alert("Le nom de la catégorie est requis");
     return;
   }
 
@@ -906,7 +916,7 @@ function renderExistingImages(images) {
 
 // Delete existing image
 function deleteExistingImage(imgUrl, index) {
-  if (!confirm("هل تريد حذف هذه الصورة؟")) return;
+  if (!confirm("Voulez-vous supprimer cette image ?")) return;
 
   // Get current existing images from hidden field
   let existingImages = JSON.parse(
@@ -958,12 +968,12 @@ function formatDate(dateString) {
 
 function getStatusText(status) {
   const statusMap = {
-    pending: "قيد الانتظار",
-    processing: "قيد المعالجة",
-    completed: "مكتمل",
-    cancelled: "ملغي",
+    pending: "En attente",
+    processing: "En cours",
+    completed: "Terminé",
+    cancelled: "Annulé",
   };
-  return statusMap[status] || "قيد الانتظار";
+  return statusMap[status] || "En attente";
 }
 
 // Make functions globally available
@@ -1014,7 +1024,7 @@ function renderWilayasTable() {
 
   if (wilayas.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="4" class="text-center py-8">لا توجد ولايات مضافة</td></tr>';
+      '<tr><td colspan="4" class="text-center py-8">Aucune wilaya ajoutée</td></tr>';
     return;
   }
 
@@ -1044,14 +1054,16 @@ function showAddWilayaModal(index = null) {
 
   if (index !== null && settings.deliveryWilayas[index]) {
     const wilaya = settings.deliveryWilayas[index];
-    document.getElementById("wilayaModalTitle").textContent = "تعديل الولاية";
+    document.getElementById("wilayaModalTitle").textContent =
+      "Modifier la wilaya";
     document.getElementById("wilayaName").value = wilaya.name || "";
     document.getElementById("wilayaHomePrice").value = wilaya.homePrice || 0;
     document.getElementById("wilayaOfficePrice").value =
       wilaya.officePrice || 0;
     document.getElementById("wilayaIndex").value = index;
   } else {
-    document.getElementById("wilayaModalTitle").textContent = "إضافة ولاية";
+    document.getElementById("wilayaModalTitle").textContent =
+      "Ajouter une wilaya";
     document.getElementById("wilayaForm").reset();
     document.getElementById("wilayaIndex").value = "";
   }
@@ -1074,7 +1086,7 @@ async function saveWilaya(e) {
   const index = document.getElementById("wilayaIndex").value;
 
   if (!name) {
-    alert("اسم الولاية مطلوب");
+    alert("Le nom de la wilaya est requis");
     return;
   }
 
@@ -1109,19 +1121,19 @@ async function saveWilaya(e) {
         settings = currentSettings;
         renderWilayasTable();
         closeModal();
-        alert("تم حفظ الولاية بنجاح");
+        alert("Wilaya enregistrée avec succès");
       } else {
         throw new Error("Failed to save wilaya");
       }
     }
   } catch (error) {
     console.error("Error saving wilaya:", error);
-    alert("حدث خطأ أثناء حفظ الولاية");
+    alert("Erreur lors de l'enregistrement de la wilaya");
   }
 }
 
 async function deleteWilaya(index) {
-  if (!confirm("هل أنت متأكد من حذف هذه الولاية؟")) return;
+  if (!confirm("Êtes-vous sûr de vouloir supprimer cette wilaya ?")) return;
 
   try {
     const response = await fetch(`${CONFIG.API_BASE}/settings`);
@@ -1145,7 +1157,7 @@ async function deleteWilaya(index) {
     }
   } catch (error) {
     console.error("Error deleting wilaya:", error);
-    alert("حدث خطأ أثناء حذف الولاية");
+    alert("Erreur lors de la suppression de la wilaya");
   }
 }
 
@@ -1169,12 +1181,12 @@ async function saveStoreInfo() {
 
       if (saveResponse.ok) {
         settings = currentSettings;
-        alert("تم حفظ معلومات المتجر بنجاح");
+        alert("Informations du magasin enregistrées avec succès");
       }
     }
   } catch (error) {
     console.error("Error saving store info:", error);
-    alert("حدث خطأ أثناء حفظ معلومات المتجر");
+    alert("Erreur lors de l'enregistrement des informations du magasin");
   }
 }
 
