@@ -7,6 +7,13 @@
   "trailingSlash": false,
   "routes": [
     {
+      "src": "^/ping/?$",
+      "dest": "https://windy-luxury-2.onrender.com/ping",
+      "headers": {
+        "x-vercel-proxy": "render-backend"
+      }
+    },
+    {
       "src": "^/admin/?$",
       "dest": "/admin.html"
     },

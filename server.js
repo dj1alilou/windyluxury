@@ -642,6 +642,18 @@ app.put("/api/orders/:id", async (req, res) => {
   }
 });
 
+// ==================== HEALTH ENDPOINT (Render Health Check) ====================
+
+// Health endpoint for Render's health check mechanism
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+  });
+});
+
 // ==================== PING ENDPOINT (Keep Awake) ====================
 
 // Ping endpoint to prevent server from sleeping on Render free tier
