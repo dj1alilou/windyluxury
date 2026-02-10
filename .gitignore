@@ -9,3 +9,4 @@ data/orders.json
 npm-debug.log*
 .DS_Store
 *.local
+.vercel
