@@ -1471,6 +1471,7 @@ function closeModal() {
 }
 
 function showSuccessMessage(orderId, totalPrice) {
+  console.log("Showing success modal for order:", orderId);
   const modal = document.createElement("div");
   modal.className = "modal-overlay active";
   modal.innerHTML = `
@@ -1489,6 +1490,16 @@ function showSuccessMessage(orderId, totalPrice) {
     `;
   document.body.appendChild(modal);
   document.body.style.overflow = "hidden";
+
+  // Fallback - also show alert after 2 seconds if modal not visible
+  setTimeout(() => {
+    const modalCheck = document.querySelector(".modal-overlay.active");
+    if (!modalCheck) {
+      alert(
+        `✅ Commande confirmée!\nNuméro: ${orderId}\nTotal: ${totalPrice.toLocaleString("fr-FR")} DA`,
+      );
+    }
+  }, 2000);
 }
 
 function closeSuccessModal() {
@@ -1515,6 +1526,9 @@ function fetchDataFromSheet() {
   showNotification("Produits et prix de livraison mis à jour");
 }
 
+// Order submission flag to prevent double clicks
+let isSubmittingOrder = false;
+
 function setupEventListeners() {
   document.querySelectorAll("form").forEach((form) => {
     form.addEventListener("submit", (e) => {
@@ -1527,6 +1541,13 @@ function setupEventListeners() {
   if (cartOrderForm) {
     cartOrderForm.addEventListener("submit", async function (e) {
       e.preventDefault();
+
+      if (isSubmittingOrder) {
+        console.log("Order already being submitted...");
+        return;
+      }
+      isSubmittingOrder = true;
+
       console.log("Cart order form submitted");
 
       const name = document.getElementById("cartCustomerName")?.value || "";
@@ -1634,6 +1655,9 @@ function setupEventListeners() {
 
         closeCartModal();
 
+        // Reset flag
+        isSubmittingOrder = false;
+
         // Refresh products display with latest stock
         loadProductsFromApi();
       } catch (error) {
@@ -1641,6 +1665,7 @@ function setupEventListeners() {
         alert(
           "Erreur lors de l'enregistrement de la commande. Veuillez réessayer.",
         );
+        isSubmittingOrder = false;
       }
     });
   }
@@ -1650,6 +1675,12 @@ function setupEventListeners() {
   if (orderForm) {
     orderForm.addEventListener("submit", async function (e) {
       e.preventDefault();
+
+      if (isSubmittingOrder) {
+        console.log("Order already being submitted...");
+        return;
+      }
+      isSubmittingOrder = true;
 
       console.log("Single product form submitted - Checking fields...");
 
@@ -1765,6 +1796,9 @@ function setupEventListeners() {
 
         closeModal();
 
+        // Reset flag
+        isSubmittingOrder = false;
+
         // Refresh products display
         loadProductsFromApi();
       } catch (error) {
@@ -1772,6 +1806,7 @@ function setupEventListeners() {
         alert(
           "Erreur lors de l'enregistrement de la commande. Veuillez réessayer.",
         );
+        isSubmittingOrder = false;
       }
     });
   }
