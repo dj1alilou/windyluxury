@@ -1663,8 +1663,9 @@ function setupEventListeners() {
 
         closeCartModal();
 
-        // Reset flag
+        // Reset flag and loading
         isSubmittingOrder = false;
+        setOrderButtonLoading(false, true);
 
         // Refresh products display with latest stock
         loadProductsFromApi();
@@ -1674,8 +1675,29 @@ function setupEventListeners() {
           "Erreur lors de l'enregistrement de la commande. Veuillez réessayer.",
         );
         isSubmittingOrder = false;
+        setOrderButtonLoading(false, true);
       }
     });
+  }
+
+  // Helper function to show loading on order button
+  function setOrderButtonLoading(loading, isCart = false) {
+    const btnId = isCart ? "cartOrderBtn" : "orderSubmitBtn";
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      if (loading) {
+        btn.disabled = true;
+        btn.dataset.originalText = btn.innerHTML;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Traitement en cours...</span>`;
+        btn.style.opacity = "0.7";
+      } else {
+        btn.disabled = false;
+        btn.innerHTML =
+          btn.dataset.originalText ||
+          `<i class="fas fa-check-circle"></i> <span>Confirmer la Commande</span>`;
+        btn.style.opacity = "1";
+      }
+    }
   }
 
   // Single product order form
