@@ -122,6 +122,10 @@ function defaultCategories() {
 // ============== API ROUTES ==============
 
 // Health check
+app.get("/ping", (req, res) => {
+  res.send("OK");
+});
+
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
