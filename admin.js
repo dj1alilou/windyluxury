@@ -1,7 +1,7 @@
 // Admin Dashboard JavaScript - Express API Version
 // Configuration - Uses window.API_BASE for Vercel env variable
 const CONFIG = {
-  API_BASE: window.API_BASE || "http://localhost:4000/api",
+  API_BASE: "https://windy-backend-production-c7e3.up.railway.app/api",
 };
 
 // Default categories
