@@ -17,6 +17,14 @@ function getFullImageUrl(imagePath) {
     imagePath = imagePath.url;
   }
 
+  // Handle arrays - extract URLs
+  if (Array.isArray(imagePath)) {
+    imagePath = imagePath[0];
+    if (typeof imagePath === "object" && imagePath.url) {
+      imagePath = imagePath.url;
+    }
+  }
+
   // If already a data URL or full URL, return as is
   if (
     typeof imagePath === "string" &&
@@ -936,12 +944,14 @@ function renderProducts(category, page = 1) {
 
   paginatedProducts.forEach((product) => {
     const isProductAvailable = product.stock > 0;
-    // Convert relative image paths to full backend URLs
-    const mainImage = getFullImageUrl(product.image);
     // Support both single image and multiple images
-    const images = (
-      product.images || (product.image ? [product.image] : [])
-    ).map(getFullImageUrl);
+    const images = (product.images || []).map((img) => {
+      if (typeof img === "object" && img.url) {
+        return img.url;
+      }
+      return img;
+    });
+    const mainImage = images[0] || null;
 
     const productCard = document.createElement("div");
     productCard.className = "product-card";
