@@ -3,15 +3,10 @@
   "buildCommand": null,
   "outputDirectory": ".",
   "framework": null,
-  "cleanUrls": false,
-  "trailingSlash": false,
   "routes": [
     {
       "src": "^/ping/?$",
-      "dest": "https://windy-luxury-2.onrender.com/ping",
-      "headers": {
-        "x-vercel-proxy": "render-backend"
-      }
+      "dest": "https://windy-luxury-2.onrender.com/ping"
     },
     {
       "src": "^/admin/?$",
@@ -19,17 +14,11 @@
     },
     {
       "src": "^/uploads/(.*)$",
-      "dest": "https://windy-luxury-2.onrender.com/uploads/$1",
-      "headers": {
-        "x-vercel-proxy": "render-backend"
-      }
+      "dest": "https://windy-luxury-2.onrender.com/uploads/$1"
     },
     {
       "src": "/api/(.*)",
-      "dest": "https://windy-luxury-2.onrender.com/api/$1",
-      "headers": {
-        "x-vercel-proxy": "render-backend"
-      }
+      "dest": "https://windy-luxury-2.onrender.com/api/$1"
     },
     {
       "src": "/(.*)/",
