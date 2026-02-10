@@ -8,28 +8,38 @@
   },
   "routes": [
     {
-      "src": "^/ping/?$",
-      "dest": "https://windy-luxury-2.onrender.com/ping"
-    },
-    {
-      "src": "^/admin/?$",
-      "dest": "/admin.html"
-    },
-    {
-      "src": "^/uploads/(.*)$",
-      "dest": "https://windy-luxury-2.onrender.com/uploads/$1"
-    },
-    {
       "src": "/api/(.*)",
       "dest": "https://windy-luxury-2.onrender.com/api/$1"
     },
     {
-      "src": "/(.*)/",
-      "dest": "/$1/index.html"
+      "src": "/ping",
+      "dest": "https://windy-luxury-2.onrender.com/ping"
     },
     {
-      "src": "/(.*[^\\..*])/?$",
-      "dest": "/index.html"
+      "src": "/uploads/(.*)",
+      "dest": "https://windy-luxury-2.onrender.com/uploads/$1"
+    },
+    {
+      "src": "/admin",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "/(.*\\.js)$",
+      "headers": {
+        "Cache-Control": "public, max-age=86400"
+      }
+    },
+    {
+      "src": "/(.*\\.css)$",
+      "headers": {
+        "Cache-Control": "public, max-age=86400"
+      }
+    },
+    {
+      "src": "/(.*\\.(jpg|jpeg|png|gif|svg|ico))$",
+      "headers": {
+        "Cache-Control": "public, max-age=86400"
+      }
     },
     {
       "src": "/(.*)",
