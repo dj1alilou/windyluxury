@@ -11,8 +11,9 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping server
+      - name: Ping Render backend
         run: |
-          # Ping the Render server to keep it awake
-          curl -s -o /dev/null -w "%{http_code}" ${{ secrets.RENDER_URL || 'https://your-app.onrender.com' }}
+          echo "Pinging Render backend..."
+          curl -s -o /dev/null -w "%{http_code}" https://windy-luxury-2.onrender.com/ping || echo "000"
+          curl -s -o /dev/null -w " Status: %{http_code}\n" https://windy-luxury-2.onrender.com/api/products || echo "Products API: failed"
           echo "Ping sent at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
