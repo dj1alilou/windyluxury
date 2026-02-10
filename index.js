@@ -1472,7 +1472,15 @@ function closeModal() {
 
 function showSuccessMessage(orderId, totalPrice) {
   console.log("Showing success modal for order:", orderId);
+
+  // Remove any existing success modal first
+  const existingModal = document.getElementById("successModal");
+  if (existingModal) {
+    existingModal.remove();
+  }
+
   const modal = document.createElement("div");
+  modal.id = "successModal";
   modal.className = "modal-overlay active";
   modal.innerHTML = `
         <div class="modal-content success-modal">
@@ -1493,7 +1501,7 @@ function showSuccessMessage(orderId, totalPrice) {
 
   // Fallback - also show alert after 2 seconds if modal not visible
   setTimeout(() => {
-    const modalCheck = document.querySelector(".modal-overlay.active");
+    const modalCheck = document.getElementById("successModal");
     if (!modalCheck) {
       alert(
         `✅ Commande confirmée!\nNuméro: ${orderId}\nTotal: ${totalPrice.toLocaleString("fr-FR")} DA`,
@@ -1503,7 +1511,7 @@ function showSuccessMessage(orderId, totalPrice) {
 }
 
 function closeSuccessModal() {
-  const modal = document.querySelector(".modal-overlay.success-modal");
+  const modal = document.getElementById("successModal");
   if (modal) {
     modal.remove();
     document.body.style.overflow = "auto";
