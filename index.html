@@ -1052,9 +1052,274 @@
         color: #6b7280;
         margin-left: 1rem;
       }
+
+      /* Loading Screen Styles */
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, #fef6f9 0%, #fff5f7 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition:
+          opacity 0.5s ease,
+          visibility 0.5s ease;
+      }
+
+      .loading-screen.hidden {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .loading-logo {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+        margin-bottom: 30px;
+        animation: floatPulse 3s ease-in-out infinite;
+      }
+
+      @keyframes floatPulse {
+        0%,
+        100% {
+          transform: translateY(0) scale(1);
+        }
+        25% {
+          transform: translateY(-10px) scale(1.05);
+        }
+        50% {
+          transform: translateY(0) scale(1);
+        }
+        75% {
+          transform: translateY(5px) scale(0.95);
+        }
+      }
+
+      .loading-welcome {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 32px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        text-align: center;
+        animation: fadeInUp 0.8s ease;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .loading-subtitle {
+        font-family: "Montserrat", sans-serif;
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 50px;
+        animation: fadeInUp 0.8s ease 0.2s both;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .progress-wrapper {
+        width: 320px;
+        max-width: 85vw;
+      }
+
+      .progress-container {
+        background: #f0f0f0;
+        border-radius: 25px;
+        padding: 6px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .progress-bar {
+        height: 12px;
+        background: linear-gradient(
+          135deg,
+          #f093fb 0%,
+          #f5576c 50%,
+          #f093fb 100%
+        );
+        background-size: 200% 200%;
+        border-radius: 20px;
+        width: 0%;
+        position: relative;
+        overflow: hidden;
+        animation: gradientShift 2s ease infinite;
+      }
+
+      @keyframes gradientShift {
+        0%,
+        100% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+      }
+
+      .progress-bar::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          rgba(255, 255, 255, 0.5) 50%,
+          transparent 100%
+        );
+        animation: shimmer 1s infinite;
+      }
+
+      @keyframes shimmer {
+        0% {
+          transform: translateX(-150%);
+        }
+        100% {
+          transform: translateX(150%);
+        }
+      }
+
+      .loading-tip {
+        font-family: "Montserrat", sans-serif;
+        font-size: 13px;
+        color: #999;
+        margin-top: 25px;
+        text-align: center;
+        max-width: 300px;
+        animation: fadeInUp 0.8s ease 0.4s both;
+      }
+
+      .enter-button {
+        margin-top: 30px;
+        padding: 15px 50px;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        font-family: "Montserrat", sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        border: none;
+        border-radius: 30px;
+        cursor: pointer;
+        opacity: 0;
+        visibility: hidden;
+        transform: scale(0.8);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 10px 30px rgba(240, 147, 251, 0.4);
+      }
+
+      .enter-button.visible {
+        opacity: 1;
+        visibility: visible;
+        transform: scale(1);
+      }
+
+      .enter-button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 15px 40px rgba(240, 147, 251, 0.6);
+      }
+
+      .enter-button i {
+        margin-left: 10px;
+        animation: bounceRight 1s ease infinite;
+      }
+
+      @keyframes bounceRight {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        50% {
+          transform: translateX(5px);
+        }
+      }
+
+      .dots-loading {
+        display: flex;
+        gap: 8px;
+        margin-top: 15px;
+        justify-content: center;
+      }
+
+      .dots-loading span {
+        width: 10px;
+        height: 10px;
+        background: #f093fb;
+        border-radius: 50%;
+        animation: dotsBounce 1.4s ease-in-out infinite;
+      }
+
+      .dots-loading span:nth-child(1) {
+        animation-delay: 0s;
+      }
+      .dots-loading span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .dots-loading span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes dotsBounce {
+        0%,
+        100% {
+          transform: translateY(0);
+          opacity: 0.4;
+        }
+        50% {
+          transform: translateY(-10px);
+          opacity: 1;
+        }
+      }
     </style>
   </head>
   <body class="bg-gray-50">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+      <img
+        src="images/luxurylogo-removebg-preview.png"
+        alt="Logo"
+        class="loading-logo"
+      />
+      <h1 class="loading-welcome">Bienvenue chez Windy Luxury</h1>
+      <p class="loading-subtitle">
+        Nous préparons quelque chose de spécial pour vous…
+      </p>
+      <div class="progress-wrapper">
+        <div class="progress-container">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+      </div>
+      <p class="loading-tip">Le serveur démarre... merci de votre patience</p>
+      <div class="dots-loading">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <button
+        id="enterButton"
+        class="enter-button"
+        onclick="hideLoadingScreen()"
+      >
+        Découvrir la Collection <i class="fas fa-arrow-right"></i>
+      </button>
+    </div>
+
     <!-- Navigation with Cart Button -->
     <nav class="bg-white fixed top-0 left-0 right-0 z-50 shadow-sm">
       <div class="container mx-auto px-4 py-3">
@@ -1891,6 +2156,54 @@
       window.API_BASE = "https://windy-luxury-2.onrender.com/api";
       window.BACKEND_URL = "https://windy-luxury-2.onrender.com";
     </script>
+
+    <!-- Loading Screen Script -->
+    <script>
+      // Loading Screen Animation
+      document.addEventListener("DOMContentLoaded", function () {
+        const loadingScreen = document.getElementById("loadingScreen");
+        const progressBar = document.getElementById("progressBar");
+        const enterButton = document.getElementById("enterButton");
+        const loadingDuration = 13000; // 13 seconds (between 12-14)
+        const updateInterval = 50;
+        let progress = 0;
+        let elapsed = 0;
+
+        function updateProgress() {
+          elapsed += updateInterval;
+          progress = (elapsed / loadingDuration) * 100;
+
+          if (progress >= 100) {
+            progress = 100;
+            progressBar.style.width = "100%";
+
+            // Show enter button with animation
+            if (enterButton) {
+              enterButton.classList.add("visible");
+            }
+
+            clearInterval(progressInterval);
+            return;
+          }
+
+          progressBar.style.width = progress + "%";
+        }
+
+        // Start the progress bar animation
+        const progressInterval = setInterval(updateProgress, updateInterval);
+
+        // Prevent body scrolling while loading
+        document.body.style.overflow = "hidden";
+      });
+
+      // Function to hide loading screen when button is clicked
+      function hideLoadingScreen() {
+        const loadingScreen = document.getElementById("loadingScreen");
+        loadingScreen.classList.add("hidden");
+        document.body.style.overflow = "auto";
+      }
+    </script>
+
     <!-- JavaScript -->
     <script src="index.js"></script>
   </body>
