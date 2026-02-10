@@ -40,7 +40,12 @@ async function connectMongoDB() {
 }
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: true, // Allow all origins for development
+    credentials: true,
+  }),
+);
 app.use(express.json({ limit: "50mb" })); // Increase limit for Base64 images
 app.use(express.static(path.join(__dirname)));
 
