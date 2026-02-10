@@ -582,6 +582,8 @@ app.get("/api/orders", async (req, res) => {
 
 app.post("/api/orders", async (req, res) => {
   try {
+    console.log("Received order request:", req.body);
+
     const order = {
       id: Date.now().toString(),
       ...req.body,
@@ -590,20 +592,26 @@ app.post("/api/orders", async (req, res) => {
     };
 
     if (db) {
+      console.log("Saving to MongoDB...");
       await db.collection("orders").insertOne(order);
     } else {
+      console.log("Saving to file...");
       const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
       let orders = [];
       try {
         const data = fs.readFileSync(ORDERS_FILE, "utf8");
         orders = JSON.parse(data);
-      } catch {}
+      } catch (e) {
+        console.log("No existing orders file, creating new one");
+      }
       orders.push(order);
       fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
     }
 
+    console.log("Order saved successfully:", order.id);
     res.status(201).json(order);
   } catch (error) {
+    console.error("Error saving order:", error);
     res.status(500).json({ error: error.message });
   }
 });
