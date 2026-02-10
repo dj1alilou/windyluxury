@@ -3,23 +3,8 @@
   "buildCommand": null,
   "outputDirectory": ".",
   "framework": null,
-  "env": {
-    "API_BASE": "https://windy-luxury-2.onrender.com/api"
-  },
   "regions": ["iad1"],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "https://windy-luxury-2.onrender.com/api/$1"
-    },
-    {
-      "src": "/ping",
-      "dest": "https://windy-luxury-2.onrender.com/ping"
-    },
-    {
-      "src": "/uploads/(.*)",
-      "dest": "https://windy-luxury-2.onrender.com/uploads/$1"
-    },
     {
       "src": "/admin",
       "dest": "/admin.html"
