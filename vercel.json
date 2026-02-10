@@ -3,6 +3,9 @@
   "buildCommand": null,
   "outputDirectory": ".",
   "framework": null,
+  "env": {
+    "API_BASE": "https://windy-luxury-2.onrender.com/api"
+  },
   "routes": [
     {
       "src": "^/ping/?$",
