@@ -11,11 +11,18 @@ const CONFIG = {
 // Helper function to convert relative image URLs to full backend URLs
 function getFullImageUrl(imagePath) {
   if (!imagePath) return null;
+
+  // Handle Cloudinary object format: { url: "...", publicId: "..." }
+  if (typeof imagePath === "object" && imagePath.url) {
+    imagePath = imagePath.url;
+  }
+
   // If already a data URL or full URL, return as is
   if (
-    imagePath.startsWith("data:") ||
-    imagePath.startsWith("http://") ||
-    imagePath.startsWith("https://")
+    typeof imagePath === "string" &&
+    (imagePath.startsWith("data:") ||
+      imagePath.startsWith("http://") ||
+      imagePath.startsWith("https://"))
   ) {
     return imagePath;
   }
