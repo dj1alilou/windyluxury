@@ -362,7 +362,7 @@ function renderOrdersTable(ordersList) {
 
   if (ordersList.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="7" class="text-center py-8">Aucune commande</td></tr>';
+      '<tr><td colspan="8" class="text-center py-8">Aucune commande</td></tr>';
     return;
   }
 
@@ -370,6 +370,9 @@ function renderOrdersTable(ordersList) {
     .map(
       (order) => `
     <tr>
+      <td>
+        <input type="checkbox" class="order-checkbox" value="${order.id}" onchange="updateExportButton()" />
+      </td>
       <td>${order.id?.slice(-6) || "N/A"}</td>
       <td>${order.customerName || "عميل"}</td>
       <td>${(order.products || []).length} produits</td>
@@ -379,30 +382,46 @@ function renderOrdersTable(ordersList) {
         order.status,
       )}</span></td>
       <td>
-        <button onclick="viewOrder('${
-          order.id
-        }')" class="btn btn-primary" style="padding: 4px 8px;">
-          <i class="fas fa-eye"></i>
+        <button onclick="viewOrder('${order.id}')" class="btn btn-primary" style="padding: 4px 8px;">
+          <i class="fas fa-eye"></i> Voir
         </button>
-        <select onchange="updateOrderStatus('${
-          order.id
-        }', this.value)" class="form-control" style="width: auto; padding: 4px 8px;">
-          <option value="pending" ${order.status === "pending" ? "selected" : ""}>En attente</option>
-          <option value="processing" ${
-            order.status === "processing" ? "selected" : ""
-          }>En cours</option>
-          <option value="completed" ${
-            order.status === "completed" ? "selected" : ""
-          }>Terminé</option>
-          <option value="cancelled" ${
-            order.status === "cancelled" ? "selected" : ""
-          }>Annulé</option>
-        </select>
       </td>
     </tr>
   `,
     )
     .join("");
+}
+
+// Toggle Select All Orders
+function toggleSelectAllOrders() {
+  const selectAllCheckbox = document.getElementById("selectAllOrders");
+  const checkboxes = document.querySelectorAll(".order-checkbox");
+  checkboxes.forEach((cb) => (cb.checked = selectAllCheckbox.checked));
+  updateExportButton();
+}
+
+// Update Export Button State
+function updateExportButton() {
+  const checkboxes = document.querySelectorAll(".order-checkbox:checked");
+  const exportBtn = document.getElementById("exportSelectedBtn");
+  if (exportBtn) {
+    exportBtn.disabled = checkboxes.length === 0;
+  }
+}
+
+// Export Selected Orders
+function exportSelectedOrders() {
+  const checkboxes = document.querySelectorAll(".order-checkbox:checked");
+  const orderIds = Array.from(checkboxes).map((cb) => cb.value);
+
+  if (orderIds.length === 0) {
+    alert("Veuillez sélectionner au moins une commande");
+    return;
+  }
+
+  // Build URL with order IDs
+  const idsParam = orderIds.join(",");
+  window.open(`/api/orders/export/zrexpress?ids=${idsParam}`, "_blank");
 }
 
 // Show Section
@@ -687,6 +706,9 @@ function viewOrder(orderId) {
   const order = orders.find((o) => o.id === orderId);
   if (!order) return;
 
+  // Store current order ID for status update
+  window.currentOrderId = orderId;
+
   // Render products list
   const productsHtml = (order.products || [])
     .map(
@@ -715,10 +737,8 @@ function viewOrder(orderId) {
           <p class="font-bold">${order.id?.slice(-6) || "N/A"}</p>
         </div>
         <div>
-          <p class="text-sm text-gray-600">Statut:</p>
-          <p><span class="status-badge status-${order.status || "pending"}">${getStatusText(
-            order.status,
-          )}</span></p>
+          <p class="text-sm text-gray-600">Statut actuel:</p>
+          <p><span class="status-badge status-${order.status || "pending"}">${getStatusText(order.status)}</span></p>
         </div>
         <div>
           <p class="text-sm text-gray-600">Client:</p>
@@ -745,7 +765,20 @@ function viewOrder(orderId) {
           <p class="font-bold">${formatDate(order.createdAt)}</p>
         </div>
       </div>
-      
+
+      <div>
+        <label class="block text-sm font-bold mb-2">Changer le statut:</label>
+        <select id="orderStatusSelect" class="form-control" style="width: 100%; padding: 8px;">
+          <option value="pending" ${order.status === "pending" ? "selected" : ""}>En attente</option>
+          <option value="processing" ${order.status === "processing" ? "selected" : ""}>En cours</option>
+          <option value="completed" ${order.status === "completed" ? "selected" : ""}>Terminé</option>
+          <option value="cancelled" ${order.status === "cancelled" ? "selected" : ""}>Annulé</option>
+        </select>
+        <button onclick="updateOrderStatusFromModal()" class="btn btn-success mt-2" style="width: 100%;">
+          <i class="fas fa-check"></i> Mettre à jour le statut
+        </button>
+      </div>
+
       <div class="mt-4">
         <h4 class="font-bold mb-2">Produits:</h4>
         <div class="border rounded">
@@ -1200,3 +1233,129 @@ document.addEventListener("DOMContentLoaded", function () {
     wilayaForm.addEventListener("submit", saveWilaya);
   }
 });
+
+// Add all default Algerian wilayas
+window.addAllDefaultWilayas = async function () {
+  const defaultWilayas = [
+    { name: "Adrar", homePrice: 0, officePrice: 0 },
+    { name: "Chlef", homePrice: 0, officePrice: 0 },
+    { name: "Laghouat", homePrice: 0, officePrice: 0 },
+    { name: "Oum El Bouaghi", homePrice: 0, officePrice: 0 },
+    { name: "Batna", homePrice: 0, officePrice: 0 },
+    { name: "Béjaïa", homePrice: 0, officePrice: 0 },
+    { name: "Biskra", homePrice: 0, officePrice: 0 },
+    { name: "Béchar", homePrice: 0, officePrice: 0 },
+    { name: "Blida", homePrice: 0, officePrice: 0 },
+    { name: "Bouïra", homePrice: 0, officePrice: 0 },
+    { name: "Tamanrasset", homePrice: 0, officePrice: 0 },
+    { name: "Tébessa", homePrice: 0, officePrice: 0 },
+    { name: "Tlemcen", homePrice: 0, officePrice: 0 },
+    { name: "Tiaret", homePrice: 0, officePrice: 0 },
+    { name: "Tizi Ouzou", homePrice: 0, officePrice: 0 },
+    { name: "Alger", homePrice: 0, officePrice: 0 },
+    { name: "Djelfa", homePrice: 0, officePrice: 0 },
+    { name: "Jijel", homePrice: 0, officePrice: 0 },
+    { name: "Sétif", homePrice: 0, officePrice: 0 },
+    { name: "Saïda", homePrice: 0, officePrice: 0 },
+    { name: "Skikda", homePrice: 0, officePrice: 0 },
+    { name: "Sidi Bel Abbès", homePrice: 0, officePrice: 0 },
+    { name: "Annaba", homePrice: 0, officePrice: 0 },
+    { name: "Guelma", homePrice: 0, officePrice: 0 },
+    { name: "Constantine", homePrice: 0, officePrice: 0 },
+    { name: "Médéa", homePrice: 0, officePrice: 0 },
+    { name: "Mostaganem", homePrice: 0, officePrice: 0 },
+    { name: "M'Sila", homePrice: 0, officePrice: 0 },
+    { name: "Mascara", homePrice: 0, officePrice: 0 },
+    { name: "Ouargla", homePrice: 0, officePrice: 0 },
+    { name: "Oran", homePrice: 0, officePrice: 0 },
+    { name: "El Bayadh", homePrice: 0, officePrice: 0 },
+    { name: "Illizi", homePrice: 0, officePrice: 0 },
+    { name: "Bordj Bou Arréridj", homePrice: 0, officePrice: 0 },
+    { name: "Boumerdès", homePrice: 0, officePrice: 0 },
+    { name: "El Tarf", homePrice: 0, officePrice: 0 },
+    { name: "Tindouf", homePrice: 0, officePrice: 0 },
+    { name: "Tissemsilt", homePrice: 0, officePrice: 0 },
+    { name: "El Oued", homePrice: 0, officePrice: 0 },
+    { name: "Khenchela", homePrice: 0, officePrice: 0 },
+    { name: "Souk Ahras", homePrice: 0, officePrice: 0 },
+    { name: "Tipaza", homePrice: 0, officePrice: 0 },
+    { name: "Mila", homePrice: 0, officePrice: 0 },
+    { name: "Aïn Defla", homePrice: 0, officePrice: 0 },
+    { name: "Naâma", homePrice: 0, officePrice: 0 },
+    { name: "Aïn Témouchent", homePrice: 0, officePrice: 0 },
+    { name: "Ghardaïa", homePrice: 0, officePrice: 0 },
+    { name: "Relizane", homePrice: 0, officePrice: 0 },
+    { name: "Timimoun", homePrice: 0, officePrice: 0 },
+    { name: "Bordj Badji Mokhtar", homePrice: 0, officePrice: 0 },
+    { name: "Ouled Djellal", homePrice: 0, officePrice: 0 },
+    { name: "Béni Abbès", homePrice: 0, officePrice: 0 },
+    { name: "In Salah", homePrice: 0, officePrice: 0 },
+    { name: "In Guezzam", homePrice: 0, officePrice: 0 },
+    { name: "Touggourt", homePrice: 0, officePrice: 0 },
+    { name: "Djanet", homePrice: 0, officePrice: 0 },
+    { name: "El M'Ghair", homePrice: 0, officePrice: 0 },
+    { name: "Meniaa", homePrice: 0, officePrice: 0 },
+  ];
+
+  try {
+    const response = await fetch(`${CONFIG.API_BASE}/settings`);
+    if (response.ok) {
+      const currentSettings = await response.json();
+
+      if (!currentSettings.deliveryWilayas) {
+        currentSettings.deliveryWilayas = [];
+      }
+
+      defaultWilayas.forEach((wilaya) => {
+        const exists = currentSettings.deliveryWilayas.some(
+          (w) => w.name === wilaya.name,
+        );
+        if (!exists) {
+          currentSettings.deliveryWilayas.push(wilaya);
+        }
+      });
+
+      const saveResponse = await fetch(`${CONFIG.API_BASE}/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(currentSettings),
+      });
+
+      if (saveResponse.ok) {
+        settings = currentSettings;
+        renderWilayasTable();
+        alert("Toutes les wilayas ont été ajoutées!");
+      }
+    }
+  } catch (error) {
+    console.error("Error adding default wilayas:", error);
+    alert("Erreur lors de l'ajout des wilayas");
+  }
+};
+
+// Update Order Status from Modal
+window.updateOrderStatusFromModal = async function () {
+  const orderId = window.currentOrderId;
+  const status = document.getElementById("orderStatusSelect").value;
+
+  if (!orderId) return;
+
+  try {
+    const response = await fetch(
+      `${CONFIG.API_BASE}/orders/${orderId}/status`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      },
+    );
+
+    if (response.ok) {
+      closeModal();
+      await loadOrders();
+      updateDashboard();
+    }
+  } catch (error) {
+    console.error("Error updating order status:", error);
+  }
+};

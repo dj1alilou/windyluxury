@@ -31,22 +31,42 @@ const upload = multer({ storage });
 let db = null;
 const MONGODB_URI =
   process.env.MONGODB_URI ||
-  "mongodb+srv://windyadmin:hamoudihadil123@windy-cluster.dr4qj3p.mongodb.net/windyluxury?retryWrites=true&w=majority";
+  "mongodb+srv://windyluxury:hadil2026dj@windyluxuryoff.98vdhye.mongodb.net/windyluxury?retryWrites=true&w=majority";
+
+// Direct connection fallback (for networks that block SRV lookups)
+const DIRECT_MONGODB_URI =
+  "mongodb://windyluxury:hadil2026dj@ac-8loszcd-shard-00-00.98vdhye.mongodb.net:27017,ac-8loszcd-shard-00-01.98vdhye.mongodb.net:27017,ac-8loszcd-shard-00-02.98vdhye.mongodb.net:27017/windyluxury?ssl=true&authSource=admin&retryWrites=true";
 
 async function connectDB() {
+  // Try SRV connection first
   try {
     const client = new MongoClient(MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000,
-      connectTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
     });
     await client.connect();
     db = client.db("windyluxury");
     console.log("✅ Connected to MongoDB Atlas");
     return true;
   } catch (err) {
-    console.log("⚠️ MongoDB connection failed:", err.message);
-    console.log("📁 Falling back to file-based storage");
-    return false;
+    console.log("⚠️ SRV connection failed:", err.message);
+
+    // Try direct connection as fallback
+    try {
+      console.log("🔄 Trying direct connection...");
+      const client = new MongoClient(DIRECT_MONGODB_URI, {
+        serverSelectionTimeoutMS: 15000,
+        connectTimeoutMS: 15000,
+      });
+      await client.connect();
+      db = client.db("windyluxury");
+      console.log("✅ Connected to MongoDB Atlas (direct)");
+      return true;
+    } catch (err2) {
+      console.log("⚠️ Direct connection also failed:", err2.message);
+      console.log("📁 Falling back to file-based storage");
+      return false;
+    }
   }
 }
 
@@ -167,7 +187,28 @@ app.get("/api/products", async (req, res) => {
 
 app.post("/api/products", upload.array("images", 4), async (req, res) => {
   try {
-    const productData = JSON.parse(req.body.product || "{}");
+    // Read product data from FormData fields
+    const productData = {
+      name: req.body.name,
+      title: req.body.title || req.body.name,
+      category: req.body.category,
+      price: parseFloat(req.body.price) || 0,
+      oldPrice: parseFloat(req.body.oldPrice) || 0,
+      stock: parseInt(req.body.stock) || 0,
+      description: req.body.description,
+      featured: req.body.featured,
+      status: req.body.status || "active",
+    };
+
+    // Parse sizes if provided
+    if (req.body.sizes) {
+      try {
+        productData.sizes = JSON.parse(req.body.sizes);
+      } catch (e) {
+        // Ignore size parsing errors
+      }
+    }
+
     const files = req.files;
 
     // Upload images to Cloudinary
@@ -187,7 +228,7 @@ app.post("/api/products", upload.array("images", 4), async (req, res) => {
       id: Date.now().toString(),
       ...productData,
       images: images.length > 0 ? images : undefined,
-      image: images.length > 0 ? images[0].url : productData.image,
+      image: images.length > 0 ? images[0].url : req.body.image,
       createdAt: new Date().toISOString(),
     };
 
@@ -397,9 +438,20 @@ app.put("/api/settings", async (req, res) => {
     const settings = req.body;
 
     if (db) {
+      // Exclude _id from settings to avoid immutable field error
+      const { _id, ...settingsToSave } = settings;
       await db
         .collection("settings")
-        .updateOne({}, { $set: settings }, { upsert: true });
+        .updateOne({}, { $set: settingsToSave }, { upsert: true });
+    } else {
+      // Save to file
+      const PRODUCTS_FILE = path.join(__dirname, "data", "products.json");
+      let data = { products: [], categories: [], settings: {} };
+      if (fs.existsSync(PRODUCTS_FILE)) {
+        data = JSON.parse(fs.readFileSync(PRODUCTS_FILE, "utf8"));
+      }
+      data.settings = settings;
+      fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(data, null, 2));
     }
 
     res.json({ success: true });
@@ -533,10 +585,117 @@ function cleanupUploads() {
   }
 }
 
+// ZR Express CSV Export
+app.get("/api/orders/export/zrexpress", async (req, res) => {
+  try {
+    let orders = [];
+    const { ids } = req.query;
+
+    if (db) {
+      if (ids) {
+        // Filter by selected order IDs
+        const idList = ids.split(",");
+        orders = await db
+          .collection("orders")
+          .find({ id: { $in: idList }, status: { $ne: "cancelled" } })
+          .sort({ createdAt: -1 })
+          .toArray();
+      } else {
+        // Export all orders (excluding cancelled)
+        orders = await db
+          .collection("orders")
+          .find({ status: { $ne: "cancelled" } })
+          .sort({ createdAt: -1 })
+          .toArray();
+      }
+    } else {
+      const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
+      if (fs.existsSync(ORDERS_FILE)) {
+        let allOrders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
+        if (ids) {
+          const idList = ids.split(",");
+          orders = allOrders.filter(
+            (o) => idList.includes(o.id) && o.status !== "cancelled",
+          );
+        } else {
+          orders = allOrders.filter((o) => o.status !== "cancelled");
+        }
+      }
+    }
+
+    // ZR Express CSV format
+    const headers = [
+      "nom complet",
+      "telephone1",
+      "telephone2",
+      "produit",
+      "quantite",
+      "Sku",
+      "type de stock",
+      "Adresse",
+      "Wilaya",
+      "Commune",
+      "prix total de la commande",
+      "Note",
+      "ID",
+      "Stopdesk",
+      "Nom stopDesk",
+    ];
+
+    const rows = orders.map((order) => {
+      const productNames = order.products?.map((p) => p.title).join(", ") || "";
+      const quantities =
+        order.products?.map((p) => p.quantity).join(", ") || "";
+      const firstProduct = order.products?.[0] || {};
+
+      return [
+        order.customerName || "",
+        order.customerPhone || "",
+        order.customerPhone2 || "",
+        productNames,
+        quantities,
+        firstProduct.id || "",
+        "",
+        order.address || "",
+        order.wilaya || "",
+        order.commune || "",
+        order.total?.toString() || "0",
+        order.notes || "",
+        order.id || "",
+        "",
+        "",
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+      ),
+    ].join("\n");
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="ZR_Express_${Date.now()}.csv"`,
+    );
+    res.send(csvContent);
+  } catch (error) {
+    console.error("Error exporting orders:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Initialize and start server
 async function start() {
   cleanupUploads();
   await connectDB();
+
+  // Serve admin.html at /admin
+  app.get("/admin", (req, res) => {
+    res.sendFile(path.join(__dirname, "admin.html"));
+  });
+
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
   });

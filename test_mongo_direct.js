@@ -1,12 +1,11 @@
 const { MongoClient } = require("mongodb");
 
-// Direct connection (works when SRV is blocked)
 const DIRECT_URI =
   "mongodb://windyluxury:hadil2026dj@ac-8loszcd-shard-00-00.98vdhye.mongodb.net:27017,ac-8loszcd-shard-00-01.98vdhye.mongodb.net:27017,ac-8loszcd-shard-00-02.98vdhye.mongodb.net:27017/windyluxury?ssl=true&authSource=admin";
 
-async function testConnection() {
-  console.log("Testing MongoDB connection...");
-  console.log("Using direct connection...");
+async function testDirectConnection() {
+  console.log("Testing direct MongoDB connection...");
+  console.log("URI:", DIRECT_URI);
 
   const client = new MongoClient(DIRECT_URI, {
     serverSelectionTimeoutMS: 30000,
@@ -16,13 +15,13 @@ async function testConnection() {
   try {
     await client.connect();
     console.log("SUCCESS! Connected to MongoDB Atlas!");
-    await client.db("windyluxury").command({ ping: 1 });
+
+    const db = client.db("windyluxury");
+    await db.command({ ping: 1 });
     console.log("Ping successful!");
 
-    const collections = await client
-      .db("windyluxury")
-      .listCollections()
-      .toArray();
+    // List collections
+    const collections = await db.listCollections().toArray();
     console.log(
       "Collections:",
       collections.map((c) => c.name),
@@ -37,4 +36,4 @@ async function testConnection() {
   }
 }
 
-testConnection();
+testDirectConnection();

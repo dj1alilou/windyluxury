@@ -1,240 +1,24 @@
 {
   "products": [
     {
-      "id": "1770400910604",
-      "name": "Robe Élégante",
-      "title": "Robe Élégante",
-      "category": "Parure",
-      "price": 3400,
-      "stock": 10,
-      "sizes": [
-        {
-          "size": "14",
-          "stock": 3
-        },
-        {
-          "size": "15",
-          "stock": 5
-        },
-        {
-          "size": "16",
-          "stock": 2
-        },
-        {
-          "size": "17",
-          "stock": 4
-        },
-        {
-          "size": "18",
-          "stock": 0
-        },
-        {
-          "size": "19",
-          "stock": 6
-        },
-        {
-          "size": "20",
-          "stock": 3
-        }
-      ],
-      "description": "Magnifique robe en coton égyptien avec broderie traditionnelle",
-      "image": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop",
-      "status": "active",
-      "createdAt": "2026-02-06T18:01:50.605Z"
-    },
-    {
-      "id": "1770401050380",
-      "name": "Bague Or Rose",
-      "title": "Bague Or Rose",
-      "category": "Bague",
-      "price": 5400,
-      "stock": 5,
-      "sizes": [
-        {
-          "size": "14",
-          "stock": 2
-        },
-        {
-          "size": "15",
-          "stock": 1
-        },
-        {
-          "size": "16",
-          "stock": 0
-        },
-        {
-          "size": "17",
-          "stock": 3
-        },
-        {
-          "size": "18",
-          "stock": 2
-        },
-        {
-          "size": "19",
-          "stock": 1
-        },
-        {
-          "size": "20",
-          "stock": 4
-        }
-      ],
-      "description": "Bague en or rose 18k avec pierre précieuse",
-      "image": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=400&h=400&fit=crop",
-      "status": "active",
-      "createdAt": "2026-02-06T18:04:10.380Z"
-    },
-    {
-      "id": "1770401751361",
-      "name": "Bracelet Perles",
-      "title": "Bracelet Perles",
+      "id": "1770833264967",
+      "name": "ring",
+      "title": "ring",
       "category": "Bracelet",
-      "price": 2800,
-      "stock": 12,
-      "description": "Bracelet avec perles de culture",
-      "image": "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=400&h=400&fit=crop",
-      "status": "active",
-      "createdAt": "2026-02-06T18:15:51.362Z"
-    },
-    {
-      "id": "1770402000001",
-      "name": "Collier Diamant",
-      "title": "Collier Diamant",
-      "category": "Collier",
-      "price": 12000,
-      "stock": 3,
-      "description": "Collier en argent avec pendentif diamant",
-      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&h=400&fit=crop",
-      "status": "active",
-      "createdAt": "2026-02-06T18:20:00.000Z"
-    },
-    {
-      "id": "1770402000002",
-      "name": "Boucles D'oreilles",
-      "title": "Boucles D'oreilles",
-      "category": "Boucles",
-      "price": 3200,
-      "stock": 8,
-      "description": "Boucles d'oreilles en argent avec zirconia",
-      "image": "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=400&h=400&fit=crop",
-      "status": "active",
-      "createdAt": "2026-02-06T18:20:00.001Z"
-    },
-    {
-      "id": "1770402000003",
-      "name": "Montre Luxe",
-      "title": "Montre Luxe",
-      "category": "Montre",
-      "price": 25000,
-      "stock": 2,
-      "description": "Montre automatique en acier inoxidable",
-      "image": "https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop",
-      "status": "active",
-      "createdAt": "2026-02-06T18:20:00.002Z"
-    },
-    {
-      "id": "1770404832308",
-      "name": "djalil",
-      "title": "djalil",
-      "category": "Montre",
-      "price": 4500,
-      "stock": 6,
-      "description": "",
-      "image": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop",
-      "status": "active",
-      "createdAt": "2026-02-06T19:07:12.308Z"
-    },
-    {
-      "id": "1770404874679",
-      "name": "parrure roberto 4 piece",
-      "title": "parrure roberto 4 piece",
-      "category": "Collier",
-      "price": 4500,
+      "price": 2340,
+      "oldPrice": 0,
       "stock": 5,
       "description": "",
-      "image": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=400&h=400&fit=crop",
+      "featured": "false",
       "status": "active",
-      "createdAt": "2026-02-06T19:07:54.679Z"
-    },
-    {
-      "id": "1770405048749",
-      "name": "ring234",
-      "title": "ring234",
-      "category": "Parure",
-      "price": 3800,
-      "stock": 3,
-      "description": "",
-      "image": "https://images.unsplash.com/photo-1599643478518-17488fbbcd75?w=400&h=400&fit=crop",
-      "status": "active",
-      "createdAt": "2026-02-06T19:10:48.749Z"
-    },
-    {
-      "id": "1770405092316",
-      "name": "jiji",
-      "title": "jiji",
-      "category": "Boucles",
-      "price": 2300,
-      "stock": 8,
-      "description": "",
-      "image": "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=400&h=400&fit=crop",
-      "status": "active",
-      "createdAt": "2026-02-06T19:11:32.316Z"
-    },
-    {
-      "id": "1770405148873",
-      "name": "ouioui",
-      "title": "ouioui",
-      "category": "Bague",
-      "price": 6300,
-      "stock": 3,
-      "description": "",
-      "image": "https://images.unsplash.com/photo-1603974372039-adc49044b6bd?w=400&h=400&fit=crop",
-      "status": "active",
-      "createdAt": "2026-02-06T19:12:28.873Z"
-    },
-    {
-      "id": "1770406725754",
-      "name": "mimi",
-      "title": "mimi",
-      "category": "Bague",
-      "price": 1400,
-      "stock": 5,
-      "description": "",
-      "image": "https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop",
-      "status": "active",
-      "createdAt": "2026-02-06T19:38:45.754Z",
-      "sizes": [
-        "14",
-        "16",
-        "18",
-        "20"
-      ]
-    },
-    {
-      "id": "1770409095131",
-      "name": "okokok",
-      "title": "okokok",
-      "category": "Montre",
-      "price": 3400,
-      "stock": 8,
-      "description": "",
-      "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
-      "status": "active",
-      "createdAt": "2026-02-06T20:18:15.131Z",
-      "sizes": [
+      "images": [
         {
-          "size": "14",
-          "stock": 5
-        },
-        {
-          "size": "16",
-          "stock": 0
-        },
-        {
-          "size": "17",
-          "stock": 3
+          "url": "https://res.cloudinary.com/ds63s4iv2/image/upload/v1770833263/windy-luxury/products/rvim87pfblwnlh8ueoae.webp",
+          "publicId": "windy-luxury/products/rvim87pfblwnlh8ueoae"
         }
-      ]
+      ],
+      "image": "https://res.cloudinary.com/ds63s4iv2/image/upload/v1770833263/windy-luxury/products/rvim87pfblwnlh8ueoae.webp",
+      "createdAt": "2026-02-11T18:07:44.967Z"
     }
   ],
   "categories": [
@@ -277,19 +61,19 @@
   ],
   "settings": {
     "storeName": "windy.luxury",
-    "storePhone": "+213 774 72 75 59",
+    "storePhone": "",
     "storeEmail": "",
-    "storeAddress": "Alger, Algérie",
+    "storeAddress": "",
     "deliveryWilayas": [
       {
         "name": "Adrar",
-        "homePrice": 0,
-        "officePrice": 0
+        "homePrice": 400,
+        "officePrice": 600
       },
       {
         "name": "Chlef",
-        "homePrice": 0,
-        "officePrice": 0
+        "homePrice": 500,
+        "officePrice": 800
       },
       {
         "name": "Laghouat",
@@ -572,6 +356,5 @@
         "officePrice": 0
       }
     ]
-  },
-  "orders": []
+  }
 }

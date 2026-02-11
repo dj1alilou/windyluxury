@@ -316,7 +316,10 @@ async function loadDeliveryWilayas() {
     if (!response.ok) throw new Error("Failed to fetch settings");
 
     const settings = await response.json();
-    deliveryWilayas = settings.deliveryWilayas || getDefaultWilayas();
+    deliveryWilayas =
+      settings.deliveryWilayas && settings.deliveryWilayas.length > 0
+        ? settings.deliveryWilayas
+        : getDefaultWilayas();
 
     console.log(
       `✅ ${deliveryWilayas.length} wilayas avec prix de livraison chargées depuis l'API`,
@@ -342,7 +345,11 @@ async function loadDeliveryWilayas() {
         "settings",
         "deliveryWilayas",
       );
-      if (savedSettings && savedSettings.wilayas) {
+      if (
+        savedSettings &&
+        savedSettings.wilayas &&
+        savedSettings.wilayas.length > 0
+      ) {
         deliveryWilayas = savedSettings.wilayas;
         console.log(
           `✅ ${deliveryWilayas.length} wilayas chargées depuis IndexedDB fallback`,
@@ -1235,8 +1242,14 @@ function showProductImage(productId) {
   selectedSize = null; // Reset size selection
   selectedImageIndex = 0; // Reset image index
 
-  // Support both single image and multiple images
-  const images = product.images || (product.image ? [product.image] : []);
+  // Support both single image and multiple images - extract URLs from objects
+  const rawImages = product.images || (product.image ? [product.image] : []);
+  const images = rawImages.map((img) => {
+    if (typeof img === "object") {
+      return img.image || img.url;
+    }
+    return img;
+  });
 
   // Update modal content
   const modalImage = document.getElementById("productDetailsImage");

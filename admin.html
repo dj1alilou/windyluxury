@@ -669,6 +669,14 @@
               Gestion des commandes
             </h2>
             <div class="flex items-center space-x-4">
+              <a
+                href="/api/orders/export/zrexpress"
+                class="btn btn-success"
+                target="_blank"
+                title="Exporter pour ZR Express (Excel/CSV)"
+              >
+                <i class="fas fa-file-excel"></i> Export ZR Express
+              </a>
               <select
                 id="orderStatusFilter"
                 class="form-control"
@@ -684,10 +692,33 @@
           </div>
 
           <div class="table-container">
+            <div
+              class="p-4 border-b flex justify-between items-center bg-gray-50"
+            >
+              <div class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="selectAllOrders"
+                  onchange="toggleSelectAllOrders()"
+                />
+                <label for="selectAllOrders" class="font-bold"
+                  >Tout sélectionner</label
+                >
+              </div>
+              <button
+                onclick="exportSelectedOrders()"
+                class="btn btn-success"
+                id="exportSelectedBtn"
+                disabled
+              >
+                <i class="fas fa-file-excel"></i> Exporter la sélection
+              </button>
+            </div>
             <div class="overflow-x-auto">
               <table>
                 <thead>
                   <tr>
+                    <th></th>
                     <th>N° commande</th>
                     <th>Client</th>
                     <th>Produits</th>
@@ -775,9 +806,18 @@
               <h3 class="text-lg font-bold text-gray-800">
                 Tarifs de livraison par wilaya
               </h3>
-              <button onclick="showAddWilayaModal()" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Ajouter une wilaya
-              </button>
+              <div class="flex gap-2">
+                <button
+                  onclick="addAllDefaultWilayas()"
+                  class="btn btn-success"
+                  title="Ajouter les 58 wilayas par défaut"
+                >
+                  <i class="fas fa-magic"></i> Ajouter toutes les wilayas
+                </button>
+                <button onclick="showAddWilayaModal()" class="btn btn-primary">
+                  <i class="fas fa-plus"></i> Ajouter une wilaya
+                </button>
+              </div>
             </div>
             <div class="overflow-x-auto">
               <table>
