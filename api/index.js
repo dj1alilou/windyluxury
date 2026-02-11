@@ -534,12 +534,39 @@ module.exports = async (req, res) => {
 
     if (pathname === "/api/settings" && method === "PUT") {
       const database = await connectDB();
-      const settings = parseBody(req.body);
+      const newSettings = parseBody(req.body);
 
       if (database) {
-        await database
+        // Get existing settings first
+        const existingSettings = await database
           .collection("settings")
-          .updateOne({}, { $set: settings }, { upsert: true });
+          .findOne();
+
+        if (existingSettings) {
+          // Merge settings - preserve existing fields not in newSettings
+          const mergedSettings = {
+            ...existingSettings,
+            ...newSettings,
+          };
+
+          // For deliveryWilayas, use the new array directly
+          // The frontend sends the complete array with all wilayas
+          if (
+            newSettings.deliveryWilayas &&
+            Array.isArray(newSettings.deliveryWilayas)
+          ) {
+            mergedSettings.deliveryWilayas = newSettings.deliveryWilayas;
+          }
+
+          await database
+            .collection("settings")
+            .updateOne({}, { $set: mergedSettings });
+        } else {
+          // No existing settings, create new
+          await database
+            .collection("settings")
+            .updateOne({}, { $set: newSettings }, { upsert: true });
+        }
       }
 
       return res.json({ success: true });
