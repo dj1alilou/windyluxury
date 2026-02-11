@@ -1,10 +1,10 @@
 require("dotenv").config();
-const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const { MongoClient } = require("mongodb");
 const cloudinary = require("cloudinary").v2;
 const sharp = require("sharp");
+const { upload } = require("./multer-config");
 
 // Configure Cloudinary
 cloudinary.config({
@@ -12,10 +12,6 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
-// Configure Multer for temporary uploads
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
 
 // MongoDB Connection - Vercel Serverless compatible
 let cachedClient = null;
@@ -131,6 +127,149 @@ function parseBody(req) {
   return {};
 }
 
+// Extract form fields from multer req.body
+function extractFormFields(body) {
+  if (!body) return {};
+
+  const fields = {};
+  for (const key in body) {
+    const value = body[key];
+    // Multer stores non-file fields as arrays
+    fields[key] = Array.isArray(value) ? value[0] : value;
+  }
+  return fields;
+}
+
+// Product Create Handler
+async function handleProductCreate(req, res) {
+  const database = await connectDB();
+  const body = extractFormFields(req.body);
+
+  console.log("Product create body:", JSON.stringify(body, null, 2));
+  console.log("Files:", req.files?.length || 0);
+
+  const productData = {
+    name: body.name || body.title,
+    title: body.title || body.name,
+    category: body.category,
+    categoryId: body.categoryId,
+    price: parseFloat(body.price) || 0,
+    oldPrice: parseFloat(body.oldPrice) || 0,
+    stock: parseInt(body.stock) || 0,
+    description: body.description,
+    featured: body.featured,
+    status: body.status || "active",
+  };
+
+  // Map category name to ID
+  if (productData.category && !productData.categoryId) {
+    productData.categoryId = categoryNameToId[productData.category] || "";
+  }
+
+  // Handle images
+  const images = [];
+  for (const file of req.files || []) {
+    const result = await uploadToCloudinary(
+      file.buffer,
+      "windy-luxury/products",
+    );
+    if (result) {
+      images.push({
+        url: result.url,
+        publicId: result.publicId,
+        format: result.format,
+      });
+    }
+  }
+
+  // Parse sizes
+  if (body.sizes) {
+    try {
+      productData.sizes =
+        typeof body.sizes === "string" ? JSON.parse(body.sizes) : body.sizes;
+    } catch (e) {}
+  }
+
+  const product = {
+    id: body.id || Date.now().toString(),
+    ...productData,
+    images: images.length > 0 ? images : undefined,
+    image: images.length > 0 ? images[0].url : body.image,
+    createdAt: body.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  console.log("Creating product:", JSON.stringify(product, null, 2));
+
+  if (database) {
+    await database.collection("products").insertOne(product);
+  }
+
+  return res.status(201).json(product);
+}
+
+// Product Update Handler
+async function handleProductUpdate(req, res, pathname) {
+  const database = await connectDB();
+  const id = pathname.split("/")[3];
+  const body = extractFormFields(req.body);
+
+  console.log("Product update body:", JSON.stringify(body, null, 2));
+
+  let existingProduct = null;
+  if (database) {
+    existingProduct = await database.collection("products").findOne({ id });
+  }
+
+  // Upload new images
+  const newImages = [];
+  for (const file of req.files || []) {
+    const result = await uploadToCloudinary(
+      file.buffer,
+      "windy-luxury/products",
+    );
+    if (result) {
+      newImages.push({
+        url: result.url,
+        publicId: result.publicId,
+        format: result.format,
+      });
+    }
+  }
+
+  const existingImages = existingProduct?.images || [];
+  const allImages = [...existingImages, ...newImages];
+
+  const updatedProduct = {
+    ...existingProduct,
+    name: body.name || existingProduct?.name,
+    title: body.title || existingProduct?.title || body.name,
+    category: body.category || existingProduct?.category,
+    categoryId: body.categoryId || existingProduct?.categoryId,
+    price: body.price ? parseFloat(body.price) : existingProduct?.price,
+    oldPrice: body.oldPrice
+      ? parseFloat(body.oldPrice)
+      : existingProduct?.oldPrice,
+    stock: body.stock ? parseInt(body.stock) : existingProduct?.stock,
+    description: body.description || existingProduct?.description,
+    featured:
+      body.featured !== undefined ? body.featured : existingProduct?.featured,
+    images: allImages,
+    image: allImages.length > 0 ? allImages[0].url : body.image,
+    updatedAt: new Date().toISOString(),
+  };
+
+  console.log("Updating product:", JSON.stringify(updatedProduct, null, 2));
+
+  if (database) {
+    await database
+      .collection("products")
+      .updateOne({ id }, { $set: updatedProduct });
+  }
+
+  return res.json(updatedProduct);
+}
+
 // Vercel Serverless Handler
 module.exports = async (req, res) => {
   const method = req.method;
@@ -148,6 +287,32 @@ module.exports = async (req, res) => {
   // Handle OPTIONS preflight
   if (req.method === "OPTIONS") {
     return res.status(200).end();
+  }
+
+  // Handle multipart/form-data for products
+  if (method === "POST" && pathname === "/api/products") {
+    try {
+      await upload.any()(req, res, async () => {
+        await handleProductCreate(req, res);
+      });
+    } catch (err) {
+      console.error("Multer error:", err);
+      return res.status(500).json({ error: "Upload error" });
+    }
+    return;
+  }
+
+  // Handle multipart/form-data for product updates
+  if (method === "PUT" && pathname.match(/^\/api\/products\/.+$/)) {
+    try {
+      await upload.any()(req, res, async () => {
+        await handleProductUpdate(req, res, pathname);
+      });
+    } catch (err) {
+      console.error("Multer error:", err);
+      return res.status(500).json({ error: "Upload error" });
+    }
+    return;
   }
 
   try {
@@ -185,142 +350,6 @@ module.exports = async (req, res) => {
         return res.json(products);
       }
       return res.json([]);
-    }
-
-    if (pathname === "/api/products" && method === "POST") {
-      const database = await connectDB();
-
-      // Parse product data - handle both JSON and FormData
-      let productData = {};
-      if (req.body && typeof req.body === "string") {
-        productData = JSON.parse(req.body);
-      } else if (req.body && req.body.product) {
-        productData =
-          typeof req.body.product === "string"
-            ? JSON.parse(req.body.product)
-            : req.body.product;
-      } else {
-        // Parse from FormData fields
-        productData = {
-          name: req.body?.name,
-          title: req.body?.title || req.body?.name,
-          category: req.body?.category,
-          categoryId: req.body?.categoryId,
-          price: parseFloat(req.body?.price) || 0,
-          oldPrice: parseFloat(req.body?.oldPrice) || 0,
-          stock: parseInt(req.body?.stock) || 0,
-          description: req.body?.description,
-          featured: req.body?.featured,
-          status: req.body?.status || "active",
-        };
-      }
-
-      // Map category name to ID if not provided
-      if (productData.category && !productData.categoryId) {
-        productData.categoryId = categoryNameToId[productData.category] || "";
-      }
-
-      // Handle images from multipart form
-      const files = req.files || [];
-      const images = [];
-
-      for (const file of files) {
-        const result = await uploadToCloudinary(
-          file.buffer,
-          "windy-luxury/products",
-        );
-        if (result) {
-          images.push({
-            url: result.url,
-            publicId: result.publicId,
-            format: result.format,
-          });
-        }
-      }
-
-      // Parse sizes if provided
-      if (req.body?.sizes) {
-        try {
-          productData.sizes =
-            typeof req.body.sizes === "string"
-              ? JSON.parse(req.body.sizes)
-              : req.body.sizes;
-        } catch (e) {
-          // Ignore size parsing errors
-        }
-      }
-
-      const product = {
-        id: Date.now().toString(),
-        name: productData.name,
-        title: productData.title || productData.name,
-        category: productData.category,
-        categoryId: productData.categoryId,
-        price: productData.price || 0,
-        oldPrice: productData.oldPrice || 0,
-        stock: productData.stock || 0,
-        description: productData.description,
-        featured: productData.featured,
-        status: productData.status || "active",
-        sizes: productData.sizes,
-        images: images.length > 0 ? images : undefined,
-        image: images.length > 0 ? images[0].url : productData.image,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      if (database) {
-        await database.collection("products").insertOne(product);
-      }
-
-      return res.status(201).json(product);
-    }
-
-    // PUT /api/products/:id
-    if (pathname.match(/^\/api\/products\/.+$/) && method === "PUT") {
-      const database = await connectDB();
-      const id = pathname.split("/")[3];
-      const productData = parseBody(req.body);
-      const files = req.files || [];
-
-      let existingProduct = null;
-      if (database) {
-        existingProduct = await database.collection("products").findOne({ id });
-      }
-
-      const newImages = [];
-      for (const file of files) {
-        const result = await uploadToCloudinary(
-          file.buffer,
-          "windy-luxury/products",
-        );
-        if (result) {
-          newImages.push({
-            url: result.url,
-            publicId: result.publicId,
-            format: result.format,
-          });
-        }
-      }
-
-      const existingImages = existingProduct?.images || [];
-      const allImages = [...existingImages, ...newImages];
-
-      const updatedProduct = {
-        ...existingProduct,
-        ...productData,
-        images: allImages,
-        image: allImages.length > 0 ? allImages[0].url : productData.image,
-        updatedAt: new Date().toISOString(),
-      };
-
-      if (database) {
-        await database
-          .collection("products")
-          .updateOne({ id }, { $set: updatedProduct });
-      }
-
-      return res.json(updatedProduct);
     }
 
     // DELETE /api/products/:id
