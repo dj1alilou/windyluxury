@@ -979,7 +979,7 @@ function renderProducts(category, page = 1) {
                         : `<div class="fallback-image">
                                 <i class="${categoryIcons[product.category] || "fas fa-gem"}" 
                                 style="font-size: 24px; margin-bottom: 5px;"></i><br>
-                                <span class="text-xs">${product.title.substring(0, 15)}...</span>
+                                <span class="text-xs">${(product.title || "").substring(0, 15)}...</span>
                             </div>`
                     }
                     ${images.length > 1 ? '<div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">' + images.length + " photos</div>" : ""}
