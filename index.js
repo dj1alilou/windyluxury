@@ -12,18 +12,12 @@ const CONFIG = {
 function getFullImageUrl(imagePath) {
   if (!imagePath) return null;
 
-  // Handle Cloudinary object format: { url: "...", publicId: "..." }
-  if (typeof imagePath === "object" && imagePath.url) {
-    imagePath = imagePath.url;
+  // Handle Cloudinary object format: { image: "...", publicId: "..." } or { url: "..." }
+  if (typeof imagePath === "object") {
+    imagePath = imagePath.image || imagePath.url;
   }
 
-  // Handle arrays - extract URLs
-  if (Array.isArray(imagePath)) {
-    imagePath = imagePath[0];
-    if (typeof imagePath === "object" && imagePath.url) {
-      imagePath = imagePath.url;
-    }
-  }
+  if (!imagePath) return null;
 
   // If already a data URL or full URL, return as is
   if (
@@ -946,8 +940,9 @@ function renderProducts(category, page = 1) {
     const isProductAvailable = product.stock > 0;
     // Support both single image and multiple images
     const images = (product.images || []).map((img) => {
-      if (typeof img === "object" && img.url) {
-        return img.url;
+      // Handle Cloudinary object format: { image: "...", publicId: "..." } or { url: "..." }
+      if (typeof img === "object") {
+        return img.image || img.url;
       }
       return img;
     });
