@@ -1,6 +1,4 @@
 require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
@@ -19,17 +17,24 @@ cloudinary.config({
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// MongoDB Connection
+// MongoDB Connection - Vercel Serverless compatible
 let cachedClient = null;
 let cachedDb = null;
-const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  "mongodb+srv://windyadmin:hamoudihadil123@windy-cluster.dr4qj3p.mongodb.net/windyluxury?retryWrites=true&w=majority";
+
+// Only use environment variable, no fallback
+const MONGODB_URI = process.env.MONGODB_URI;
 
 async function connectDB() {
+  // Check if URI is available
+  if (!MONGODB_URI) {
+    console.log("MongoDB URI not configured");
+    return null;
+  }
+
   if (cachedClient && cachedDb) {
     return cachedDb;
   }
+
   try {
     const client = new MongoClient(MONGODB_URI, {
       serverSelectionTimeoutMS: 10000,
@@ -46,6 +51,16 @@ async function connectDB() {
     return null;
   }
 }
+
+// Category ID mapping
+const categoryNameToId = {
+  Parure: "1",
+  Bracelet: "2",
+  Bague: "3",
+  Boucles: "4",
+  Montre: "5",
+  Collier: "6",
+};
 
 async function compressToWebP(buffer) {
   try {
@@ -71,7 +86,11 @@ async function uploadToCloudinary(buffer, folder = "windy-luxury") {
       );
       uploadStream.end(webpBuffer);
     });
-    return { url: result.secure_url, publicId: result.public_id };
+    return {
+      url: result.secure_url,
+      publicId: result.public_id,
+      format: result.format,
+    };
   } catch (error) {
     console.error("Cloudinary upload error:", error);
     return null;
@@ -97,282 +116,503 @@ function defaultCategories() {
   ];
 }
 
-// Create Express app
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-// Health check
-app.get("/ping", (req, res) => res.send("OK"));
-app.get("/api/health", (req, res) =>
-  res.json({ status: "ok", timestamp: new Date().toISOString() }),
-);
-
-// Categories
-app.get("/api/categories", async (req, res) => {
-  try {
-    const database = await connectDB();
-    if (database) {
-      const categories = await database
-        .collection("categories")
-        .find()
-        .toArray();
-      res.json(categories.length > 0 ? categories : defaultCategories());
-    } else {
-      res.json(defaultCategories());
+// Parse JSON body for serverless
+function parseBody(req) {
+  if (req.body) {
+    if (typeof req.body === "string") {
+      try {
+        return JSON.parse(req.body);
+      } catch (e) {
+        return {};
+      }
     }
-  } catch (error) {
-    res.json(defaultCategories());
+    return req.body;
   }
-});
+  return {};
+}
 
-// Products
-app.get("/api/products", async (req, res) => {
-  try {
-    const database = await connectDB();
-    if (database) {
-      const products = await database.collection("products").find().toArray();
-      res.json(products);
-    } else {
-      res.json([]);
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+// Vercel Serverless Handler
+module.exports = async (req, res) => {
+  const method = req.method;
+  const url = new URL(req.url, `https://${req.headers.host}`);
+  const pathname = url.pathname;
+
+  // CORS headers for serverless
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS",
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  // Handle OPTIONS preflight
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
   }
-});
 
-app.post("/api/products", upload.array("images", 4), async (req, res) => {
   try {
-    const database = await connectDB();
-    const productData = JSON.parse(req.body.product || "{}");
-    const files = req.files;
-
-    const images = [];
-    for (const file of files) {
-      const result = await uploadToCloudinary(
-        file.buffer,
-        "windy-luxury/products",
-      );
-      if (result) images.push(result);
+    // Health check endpoints
+    if (pathname === "/ping" && method === "GET") {
+      return res.send("OK");
     }
 
-    const product = {
-      id: Date.now().toString(),
-      ...productData,
-      images: images.length > 0 ? images : undefined,
-      image: images.length > 0 ? images[0].url : productData.image,
-      createdAt: new Date().toISOString(),
-    };
-
-    if (database) {
-      await database.collection("products").insertOne(product);
+    if (pathname === "/api/health" && method === "GET") {
+      return res.json({ status: "ok", timestamp: new Date().toISOString() });
     }
 
-    res.status(201).json(product);
-  } catch (error) {
-    console.error("Error creating product:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
+    // ==================== CATEGORIES ====================
 
-app.put("/api/products/:id", upload.array("images", 4), async (req, res) => {
-  try {
-    const database = await connectDB();
-    const { id } = req.params;
-    const productData = JSON.parse(req.body.product || "{}");
-    const files = req.files;
-
-    let existingProduct = null;
-    if (database) {
-      existingProduct = await database.collection("products").findOne({ id });
+    if (pathname === "/api/categories" && method === "GET") {
+      const database = await connectDB();
+      if (database) {
+        const categories = await database
+          .collection("categories")
+          .find()
+          .toArray();
+        return res.json(
+          categories.length > 0 ? categories : defaultCategories(),
+        );
+      }
+      return res.json(defaultCategories());
     }
 
-    const newImages = [];
-    for (const file of files) {
-      const result = await uploadToCloudinary(
-        file.buffer,
-        "windy-luxury/products",
-      );
-      if (result) newImages.push(result);
+    // ==================== PRODUCTS ====================
+
+    if (pathname === "/api/products" && method === "GET") {
+      const database = await connectDB();
+      if (database) {
+        const products = await database.collection("products").find().toArray();
+        return res.json(products);
+      }
+      return res.json([]);
     }
 
-    const existingImages = existingProduct?.images || [];
-    const allImages = [...existingImages, ...newImages];
+    if (pathname === "/api/products" && method === "POST") {
+      const database = await connectDB();
 
-    const updatedProduct = {
-      ...existingProduct,
-      ...productData,
-      images: allImages,
-      image: allImages.length > 0 ? allImages[0].url : productData.image,
-      updatedAt: new Date().toISOString(),
-    };
+      // Parse product data - handle both JSON and FormData
+      let productData = {};
+      if (req.body && typeof req.body === "string") {
+        productData = JSON.parse(req.body);
+      } else if (req.body && req.body.product) {
+        productData =
+          typeof req.body.product === "string"
+            ? JSON.parse(req.body.product)
+            : req.body.product;
+      } else {
+        // Parse from FormData fields
+        productData = {
+          name: req.body?.name,
+          title: req.body?.title || req.body?.name,
+          category: req.body?.category,
+          categoryId: req.body?.categoryId,
+          price: parseFloat(req.body?.price) || 0,
+          oldPrice: parseFloat(req.body?.oldPrice) || 0,
+          stock: parseInt(req.body?.stock) || 0,
+          description: req.body?.description,
+          featured: req.body?.featured,
+          status: req.body?.status || "active",
+        };
+      }
 
-    if (database) {
-      await database
-        .collection("products")
-        .updateOne({ id }, { $set: updatedProduct });
-    }
+      // Map category name to ID if not provided
+      if (productData.category && !productData.categoryId) {
+        productData.categoryId = categoryNameToId[productData.category] || "";
+      }
 
-    res.json(updatedProduct);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+      // Handle images from multipart form
+      const files = req.files || [];
+      const images = [];
 
-app.delete("/api/products/:id", async (req, res) => {
-  try {
-    const database = await connectDB();
-    const { id } = req.params;
-
-    if (database) {
-      const product = await database.collection("products").findOne({ id });
-      if (product?.images) {
-        for (const img of product.images) {
-          if (img.publicId) await deleteFromCloudinary(img.publicId);
+      for (const file of files) {
+        const result = await uploadToCloudinary(
+          file.buffer,
+          "windy-luxury/products",
+        );
+        if (result) {
+          images.push({
+            url: result.url,
+            publicId: result.publicId,
+            format: result.format,
+          });
         }
       }
-      await database.collection("products").deleteOne({ id });
+
+      // Parse sizes if provided
+      if (req.body?.sizes) {
+        try {
+          productData.sizes =
+            typeof req.body.sizes === "string"
+              ? JSON.parse(req.body.sizes)
+              : req.body.sizes;
+        } catch (e) {
+          // Ignore size parsing errors
+        }
+      }
+
+      const product = {
+        id: Date.now().toString(),
+        name: productData.name,
+        title: productData.title || productData.name,
+        category: productData.category,
+        categoryId: productData.categoryId,
+        price: productData.price || 0,
+        oldPrice: productData.oldPrice || 0,
+        stock: productData.stock || 0,
+        description: productData.description,
+        featured: productData.featured,
+        status: productData.status || "active",
+        sizes: productData.sizes,
+        images: images.length > 0 ? images : undefined,
+        image: images.length > 0 ? images[0].url : productData.image,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (database) {
+        await database.collection("products").insertOne(product);
+      }
+
+      return res.status(201).json(product);
     }
 
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+    // PUT /api/products/:id
+    if (pathname.match(/^\/api\/products\/.+$/) && method === "PUT") {
+      const database = await connectDB();
+      const id = pathname.split("/")[3];
+      const productData = parseBody(req.body);
+      const files = req.files || [];
 
-// Orders
-app.get("/api/orders", async (req, res) => {
-  try {
-    const database = await connectDB();
-    if (database) {
-      const orders = await database
-        .collection("orders")
-        .find()
-        .sort({ createdAt: -1 })
-        .toArray();
-      res.json(orders);
-    } else {
-      res.json([]);
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+      let existingProduct = null;
+      if (database) {
+        existingProduct = await database.collection("products").findOne({ id });
+      }
 
-app.post("/api/orders", async (req, res) => {
-  try {
-    const database = await connectDB();
-    const order = {
-      id: Date.now().toString(),
-      ...req.body,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    };
-
-    if (database) {
-      await database.collection("orders").insertOne(order);
-    }
-
-    res.status(201).json(order);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.put("/api/orders/:id/status", async (req, res) => {
-  try {
-    const database = await connectDB();
-    const { id } = req.params;
-    const { status } = req.body;
-
-    if (database) {
-      await database
-        .collection("orders")
-        .updateOne(
-          { id },
-          { $set: { status, updatedAt: new Date().toISOString() } },
+      const newImages = [];
+      for (const file of files) {
+        const result = await uploadToCloudinary(
+          file.buffer,
+          "windy-luxury/products",
         );
+        if (result) {
+          newImages.push({
+            url: result.url,
+            publicId: result.publicId,
+            format: result.format,
+          });
+        }
+      }
+
+      const existingImages = existingProduct?.images || [];
+      const allImages = [...existingImages, ...newImages];
+
+      const updatedProduct = {
+        ...existingProduct,
+        ...productData,
+        images: allImages,
+        image: allImages.length > 0 ? allImages[0].url : productData.image,
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (database) {
+        await database
+          .collection("products")
+          .updateOne({ id }, { $set: updatedProduct });
+      }
+
+      return res.json(updatedProduct);
     }
 
-    res.json({ success: true });
+    // DELETE /api/products/:id
+    if (pathname.match(/^\/api\/products\/.+$/) && method === "DELETE") {
+      const database = await connectDB();
+      const id = pathname.split("/")[3];
+
+      if (database) {
+        const product = await database.collection("products").findOne({ id });
+        if (product?.images) {
+          for (const img of product.images) {
+            if (img.publicId) await deleteFromCloudinary(img.publicId);
+          }
+        }
+        await database.collection("products").deleteOne({ id });
+      }
+
+      return res.json({ success: true });
+    }
+
+    // ==================== ORDERS ====================
+
+    if (pathname === "/api/orders" && method === "GET") {
+      const database = await connectDB();
+      if (database) {
+        const orders = await database
+          .collection("orders")
+          .find()
+          .sort({ createdAt: -1 })
+          .toArray();
+        return res.json(orders);
+      }
+      return res.json([]);
+    }
+
+    if (pathname === "/api/orders" && method === "POST") {
+      const database = await connectDB();
+      const body = parseBody(req.body);
+
+      // Validate required fields
+      if (!body.customerName || !body.customerPhone) {
+        return res.status(400).json({
+          success: false,
+          error: "customerName and customerPhone are required",
+        });
+      }
+
+      const orderId =
+        Date.now().toString() + Math.random().toString(36).substr(2, 5);
+
+      const order = {
+        orderId,
+        id: orderId,
+        ...body,
+        status: body.status || "pending",
+        items: body.items || body.products || [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (database) {
+        await database.collection("orders").insertOne(order);
+      }
+
+      return res.status(201).json(order);
+    }
+
+    // PUT /api/orders/:id/status
+    if (pathname.match(/^\/api\/orders\/.+\/status$/) && method === "PUT") {
+      const database = await connectDB();
+      const id = pathname.split("/")[3];
+      const body = parseBody(req.body);
+
+      if (database) {
+        await database.collection("orders").updateOne(
+          { id },
+          {
+            $set: {
+              status: body.status,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        );
+      }
+
+      return res.json({ success: true });
+    }
+
+    // GET /api/orders/export/zrexpress
+    if (pathname === "/api/orders/export/zrexpress" && method === "GET") {
+      const database = await connectDB();
+      const ids = url.searchParams.get("ids");
+      let orders = [];
+
+      if (database) {
+        if (ids) {
+          const idList = ids.split(",");
+          orders = await database
+            .collection("orders")
+            .find({ id: { $in: idList }, status: { $ne: "cancelled" } })
+            .sort({ createdAt: -1 })
+            .toArray();
+        } else {
+          orders = await database
+            .collection("orders")
+            .find({ status: { $ne: "cancelled" } })
+            .sort({ createdAt: -1 })
+            .toArray();
+        }
+      }
+
+      // ZR Express CSV format
+      const headers = [
+        "nom complet",
+        "telephone1",
+        "telephone2",
+        "produit",
+        "quantite",
+        "Sku",
+        "type de stock",
+        "Adresse",
+        "Wilaya",
+        "Commune",
+        "prix total de la commande",
+        "Note",
+        "ID",
+        "Stopdesk",
+        "Nom stopDesk",
+      ];
+
+      const rows = orders.map((order) => {
+        const productNames =
+          order.products?.map((p) => p.title || p.name).join(", ") || "";
+        const quantities =
+          order.products?.map((p) => p.quantity).join(", ") || "";
+        const firstProduct = order.products?.[0] || {};
+
+        return [
+          order.customerName || "",
+          order.customerPhone || "",
+          order.customerPhone2 || "",
+          productNames,
+          quantities,
+          firstProduct.id || "",
+          "",
+          order.address || "",
+          order.wilaya || "",
+          order.commune || "",
+          order.total?.toString() || "0",
+          order.notes || "",
+          order.id || "",
+          "",
+          "",
+        ];
+      });
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) =>
+          row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+        ),
+      ].join("\n");
+
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="ZR_Express_${Date.now()}.csv"`,
+      );
+      return res.send(csvContent);
+    }
+
+    // ==================== SETTINGS ====================
+
+    if (pathname === "/api/settings" && method === "GET") {
+      const database = await connectDB();
+      if (database) {
+        const settings = await database.collection("settings").findOne();
+        return res.json(settings || {});
+      }
+      return res.json({});
+    }
+
+    if (pathname === "/api/settings" && method === "PUT") {
+      const database = await connectDB();
+      const settings = parseBody(req.body);
+
+      if (database) {
+        await database
+          .collection("settings")
+          .updateOne({}, { $set: settings }, { upsert: true });
+      }
+
+      return res.json({ success: true });
+    }
+
+    // ==================== ADMIN ====================
+
+    if (pathname === "/api/admin/stats" && method === "GET") {
+      const database = await connectDB();
+      let products = [],
+        orders = [];
+
+      if (database) {
+        products = await database.collection("products").find().toArray();
+        orders = await database.collection("orders").find().toArray();
+      }
+
+      const revenue = orders.reduce(
+        (sum, order) => sum + (order.total || 0),
+        0,
+      );
+
+      return res.json({
+        totalProducts: products.length,
+        totalOrders: orders.length,
+        totalRevenue: revenue,
+        pendingOrders: orders.filter((o) => o.status === "pending").length,
+      });
+    }
+
+    // DELETE /api/admin/cleanup - Keep last 100 orders, 24h window
+    if (pathname === "/api/admin/cleanup" && method === "DELETE") {
+      const database = await connectDB();
+
+      if (database) {
+        const now = new Date();
+        const twentyFourHoursAgo = new Date(
+          now.getTime() - 24 * 60 * 60 * 1000,
+        );
+
+        // Get orders to keep (last 100 recent or from last 24h)
+        const ordersToKeep = await database
+          .collection("orders")
+          .find({})
+          .sort({ createdAt: -1 })
+          .limit(100)
+          .toArray();
+
+        const keepIds = new Set(ordersToKeep.map((o) => o.id));
+
+        // Delete old orders not in keep list and older than 24h
+        const deleteResult = await database.collection("orders").deleteMany({
+          $and: [
+            { id: { $nin: Array.from(keepIds) } },
+            { createdAt: { $lt: twentyFourHoursAgo.toISOString() } },
+          ],
+        });
+
+        return res.json({
+          success: true,
+          deleted: deleteResult.deletedCount,
+        });
+      }
+
+      return res.json({ success: true, deleted: 0 });
+    }
+
+    // ==================== UPLOADS ====================
+
+    // POST /api/upload
+    if (pathname === "/api/upload" && method === "POST") {
+      if (!req.body || Object.keys(req.body).length === 0) {
+        return res.status(400).json({ error: "No image provided" });
+      }
+
+      // Handle multer uploaded file
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: "No image file provided" });
+      }
+
+      const result = await uploadToCloudinary(
+        file.buffer,
+        "windy-luxury/uploads",
+      );
+      return res.json(result);
+    }
+
+    // DELETE /api/upload/:publicId
+    if (pathname.match(/^\/api\/upload\/.+$/) && method === "DELETE") {
+      const publicId = pathname.split("/")[3];
+      await deleteFromCloudinary(publicId);
+      return res.json({ success: true });
+    }
+
+    // 404 - Not Found
+    return res.status(404).json({ error: "Not found" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Settings
-app.get("/api/settings", async (req, res) => {
-  try {
-    const database = await connectDB();
-    if (database) {
-      const settings = await database.collection("settings").findOne();
-      res.json(settings || {});
-    } else {
-      res.json({});
-    }
-  } catch (error) {
-    res.json({});
-  }
-});
-
-app.put("/api/settings", async (req, res) => {
-  try {
-    const database = await connectDB();
-    const settings = req.body;
-
-    if (database) {
-      await database
-        .collection("settings")
-        .updateOne({}, { $set: settings }, { upsert: true });
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Admin stats
-app.get("/api/admin/stats", async (req, res) => {
-  try {
-    const database = await connectDB();
-    let products = [],
-      orders = [];
-
-    if (database) {
-      products = await database.collection("products").find().toArray();
-      orders = await database.collection("orders").find().toArray();
-    }
-
-    const revenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
-
-    res.json({
-      totalProducts: products.length,
-      totalOrders: orders.length,
-      totalRevenue: revenue,
-      pendingOrders: orders.filter((o) => o.status === "pending").length,
+    console.error("Server error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Internal server error",
     });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
-});
-
-// Image upload endpoint
-app.post("/api/upload", upload.single("image"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No image provided" });
-    }
-
-    const result = await uploadToCloudinary(
-      req.file.buffer,
-      "windy-luxury/uploads",
-    );
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Export for Vercel
-module.exports = app;
+};

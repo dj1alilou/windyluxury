@@ -421,7 +421,8 @@ function exportSelectedOrders() {
 
   // Build URL with order IDs
   const idsParam = orderIds.join(",");
-  window.open(`/api/orders/export/zrexpress?ids=${idsParam}`, "_blank");
+  const exportUrl = `${CONFIG.API_BASE}/orders/export/zrexpress?ids=${idsParam}`;
+  window.open(exportUrl, "_blank");
 }
 
 // Show Section

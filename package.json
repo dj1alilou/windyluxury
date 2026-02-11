@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js",
+    "dev": "npx vercel dev",
+    "vercel-dev": "npx vercel dev --local",
     "ping": "node ping.js",
     "migrate": "node migrate_images.js",
     "cleanup": "node cleanup_uploads.js"
