@@ -2,10 +2,17 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "framework": null,
-  "buildCommand": null,
-  "installCommand": null,
+  "buildCommand": "npm install",
+  "installCommand": "npm install",
   "outputDirectory": ".",
   "regions": ["iad1"],
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x",
+      "maxDuration": 10,
+      "memory": 1024
+    }
+  },
   "routes": [
     {
       "src": "^/api/(.*)$",
@@ -31,15 +38,5 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "functions": {
-    "api/index.js": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 10,
-      "memory": 1024
-    }
-  }
+  ]
 }
