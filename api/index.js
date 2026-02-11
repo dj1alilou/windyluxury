@@ -20,21 +20,27 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // MongoDB Connection
-let db = null;
+let cachedClient = null;
+let cachedDb = null;
 const MONGODB_URI =
   process.env.MONGODB_URI ||
   "mongodb+srv://windyadmin:hamoudihadil123@windy-cluster.dr4qj3p.mongodb.net/windyluxury?retryWrites=true&w=majority";
 
 async function connectDB() {
-  if (db) return db;
+  if (cachedClient && cachedDb) {
+    return cachedDb;
+  }
   try {
     const client = new MongoClient(MONGODB_URI, {
       serverSelectionTimeoutMS: 10000,
       connectTimeoutMS: 10000,
+      maxPoolSize: 10,
+      minPoolSize: 1,
     });
     await client.connect();
-    db = client.db("windyluxury");
-    return db;
+    cachedClient = client;
+    cachedDb = client.db("windyluxury");
+    return cachedDb;
   } catch (err) {
     console.log("MongoDB connection failed:", err.message);
     return null;
