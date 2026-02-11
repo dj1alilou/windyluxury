@@ -1,11 +1,16 @@
 // windy.luxury - JavaScript pour le site e-commerce en français avec IndexedDB
-// Configuration - Uses window.API_BASE for Vercel env variable
 const CONFIG = {
-  API_BASE: window.API_BASE || "http://localhost:4000/api",
+  API_BASE:
+    window.API_BASE ||
+    (window.location.hostname === "localhost"
+      ? "http://localhost:4000/api"
+      : "/api"),
   // Backend URL for image serving
   BACKEND_URL: window.API_BASE
     ? window.API_BASE.replace("/api", "")
-    : "http://localhost:4000",
+    : window.location.hostname === "localhost"
+      ? "http://localhost:4000"
+      : "",
 };
 
 // Helper function to convert relative image URLs to full backend URLs
