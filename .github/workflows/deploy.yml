@@ -1,4 +1,4 @@
-name: Deploy to Render
+name: Deploy to Vercel
 
 on:
   push:
@@ -12,23 +12,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to Render
-        run: |
-          # Trigger Render deployment via webhook
-          curl -X POST ${{ secrets.RENDER_DEPLOY_WEBHOOK_URL }}
-          echo "Deployment triggered at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-      - name: Wait for deployment and verify health
-        run: |
-          sleep 30
-          for i in {1..5}; do
-            echo "Checking health (attempt $i)..."
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.RENDER_URL || 'https://your-app.onrender.com' }}/health || echo "000")
-            if [ "$STATUS" = "200" ]; then
-              echo "✅ Server is healthy!"
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "⚠️ Server health check failed, but deployment may still be in progress"
-          exit 0
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.ORG_ID }}
+          vercel-project-id: ${{ secrets.PROJECT_ID }}
+          vercel-args: "--prod"
