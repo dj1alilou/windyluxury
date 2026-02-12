@@ -264,7 +264,23 @@ async function handleProductUpdate(req, res, pathname) {
     }
   }
 
-  const existingImages = existingProduct?.images || [];
+  // Get existing images from request body (after deletions)
+  let existingImagesFromBody = [];
+  if (body.existingImages) {
+    try {
+      existingImagesFromBody =
+        typeof body.existingImages === "string"
+          ? JSON.parse(body.existingImages)
+          : body.existingImages;
+    } catch (e) {
+      console.error("Error parsing existingImages:", e);
+    }
+  }
+
+  const existingImages =
+    existingImagesFromBody.length > 0
+      ? existingImagesFromBody
+      : existingProduct?.images || [];
   const allImages = [...existingImages, ...newImages];
 
   const updatedProduct = {

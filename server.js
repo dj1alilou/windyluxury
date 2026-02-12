@@ -279,7 +279,21 @@ app.put("/api/products/:id", upload.array("images", 4), async (req, res) => {
     }
 
     // Merge images
-    const existingImages = existingProduct?.images || [];
+    let existingImagesFromBody = [];
+    if (req.body.existingImages) {
+      try {
+        existingImagesFromBody =
+          typeof req.body.existingImages === "string"
+            ? JSON.parse(req.body.existingImages)
+            : req.body.existingImages;
+      } catch (e) {
+        console.error("Error parsing existingImages:", e);
+      }
+    }
+    const existingImages =
+      existingImagesFromBody.length > 0
+        ? existingImagesFromBody
+        : existingProduct?.images || [];
     const allImages = [...existingImages, ...newImages];
 
     const updatedProduct = {
