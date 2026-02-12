@@ -940,13 +940,9 @@ function renderExistingImages(images) {
     // Extract URL from image object or use string directly
     const imgUrl = typeof img === "object" ? img.url || img.image || "" : img;
     const div = document.createElement("div");
-    div.className = "relative image-preview-item";
+    div.className = "relative";
     div.innerHTML = `
       <img src="${imgUrl}" class="w-20 h-20 object-cover rounded-lg" />
-      <button type="button" onclick="flipImage(this)" 
-        class="image-flip-btn" title="Inverser l'image">
-        <i class="fas fa-arrows-alt-h"></i>
-      </button>
       <button type="button" onclick="deleteExistingImage('${imgUrl}', ${index})" 
         class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs z-10">
         <i class="fas fa-times"></i>
@@ -955,14 +951,6 @@ function renderExistingImages(images) {
     `;
     previewContainer.appendChild(div);
   });
-}
-
-// Flip image
-function flipImage(btn) {
-  const imageContainer = btn.closest(".image-preview-item");
-  if (imageContainer) {
-    imageContainer.classList.toggle("flipped");
-  }
 }
 
 // Delete existing image
