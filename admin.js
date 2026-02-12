@@ -1131,28 +1131,43 @@ async function saveWilaya(e) {
 
   try {
     // Load current settings
+    console.log("Fetching settings...");
     const response = await fetch(`${CONFIG.API_BASE}/settings`);
+    console.log("Settings response status:", response.status);
     if (response.ok) {
       const currentSettings = await response.json();
+      console.log(
+        "Current settings:",
+        JSON.stringify(currentSettings, null, 2),
+      );
 
       // Initialize deliveryWilayas array if not exists
       if (!currentSettings.deliveryWilayas) {
         currentSettings.deliveryWilayas = [];
+        console.log("Initialized empty deliveryWilayas array");
       }
 
       // Add or update wilaya
       if (index !== "") {
+        console.log("Updating wilaya at index:", index);
         currentSettings.deliveryWilayas[parseInt(index)] = wilayaData;
       } else {
+        console.log("Adding new wilaya:", wilayaData.name);
         currentSettings.deliveryWilayas.push(wilayaData);
       }
+      console.log(
+        "Updated deliveryWilayas:",
+        JSON.stringify(currentSettings.deliveryWilayas, null, 2),
+      );
 
       // Save settings
+      console.log("Saving settings...");
       const saveResponse = await fetch(`${CONFIG.API_BASE}/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(currentSettings),
       });
+      console.log("Save response status:", saveResponse.status);
 
       if (saveResponse.ok) {
         settings = currentSettings;

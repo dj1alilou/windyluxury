@@ -536,11 +536,21 @@ module.exports = async (req, res) => {
       const database = await connectDB();
       const newSettings = parseBody(req.body);
 
+      console.log(
+        "PUT /api/settings received:",
+        JSON.stringify(newSettings, null, 2),
+      );
+
       if (database) {
         // Get existing settings first
         const existingSettings = await database
           .collection("settings")
           .findOne();
+
+        console.log(
+          "Existing settings:",
+          JSON.stringify(existingSettings, null, 2),
+        );
 
         if (existingSettings) {
           // Merge settings - preserve existing fields not in newSettings
@@ -555,13 +565,24 @@ module.exports = async (req, res) => {
             newSettings.deliveryWilayas &&
             Array.isArray(newSettings.deliveryWilayas)
           ) {
+            console.log(
+              "Using new deliveryWilayas array with",
+              newSettings.deliveryWilayas.length,
+              "wilayas",
+            );
             mergedSettings.deliveryWilayas = newSettings.deliveryWilayas;
           }
+
+          console.log(
+            "Merged settings to save:",
+            JSON.stringify(mergedSettings, null, 2),
+          );
 
           await database
             .collection("settings")
             .updateOne({}, { $set: mergedSettings });
         } else {
+          console.log("No existing settings, creating new");
           // No existing settings, create new
           await database
             .collection("settings")
