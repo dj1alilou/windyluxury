@@ -487,7 +487,7 @@ module.exports = async (req, res) => {
         }
       }
 
-      // ZR Express CSV format
+      // ZR Express CSV format - properly formatted for Excel
       const headers = [
         "nom complet",
         "telephone1",
@@ -532,19 +532,25 @@ module.exports = async (req, res) => {
         ];
       });
 
-      const csvContent = [
+      // Build CSV with CRLF line endings for Excel
+      const csvLines = [
         headers.join(","),
         ...rows.map((row) =>
           row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
         ),
-      ].join("\n");
+      ];
+      const csvContent = csvLines.join("\r\n");
+
+      // Add BOM for Excel UTF-8 compatibility
+      const bom = "\uFEFF";
+      const finalContent = bom + csvContent;
 
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="ZR_Express_${Date.now()}.csv"`,
       );
-      return res.send(csvContent);
+      return res.send(finalContent);
     }
 
     // ==================== SETTINGS ====================
