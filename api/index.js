@@ -525,10 +525,14 @@ module.exports = async (req, res) => {
 
     if (pathname === "/api/settings" && method === "GET") {
       const database = await connectDB();
+      console.log("GET /api/settings - MongoDB connected:", database !== null);
       if (database) {
         const settings = await database.collection("settings").findOne();
+        console.log("Settings found in MongoDB:", settings ? "YES" : "NO");
+        console.log("Settings content:", JSON.stringify(settings, null, 2));
         return res.json(settings || {});
       }
+      console.log("No database connection, returning empty");
       return res.json({});
     }
 
