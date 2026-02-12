@@ -1131,52 +1131,70 @@ async function saveWilaya(e) {
 
   try {
     // Load current settings
-    console.log("Fetching settings...");
+    console.log("=== SAVING WILAYA ===");
+    console.log("Edit mode:", index !== "" ? "UPDATING" : "NEW");
+    console.log("Index:", index);
+
     const response = await fetch(`${CONFIG.API_BASE}/settings`);
-    console.log("Settings response status:", response.status);
-    if (response.ok) {
-      const currentSettings = await response.json();
+    if (!response.ok) {
+      console.error("Failed to fetch settings, status:", response.status);
+      alert("Erreur lors du chargement des paramètres");
+      return;
+    }
+
+    const currentSettings = await response.json();
+    console.log(
+      "Wilayas loaded from API:",
+      currentSettings.deliveryWilayas?.length || 0,
+    );
+
+    // Initialize deliveryWilayas array if not exists
+    if (!currentSettings.deliveryWilayas) {
+      currentSettings.deliveryWilayas = [];
+      console.log("No wilayas found, initialized empty array");
+    }
+
+    // Add or update wilaya
+    if (index !== "") {
+      console.log("Updating wilaya at index:", index);
+      currentSettings.deliveryWilayas[parseInt(index)] = wilayaData;
+    } else {
+      console.log("Adding NEW wilaya:", wilayaData.name);
+      currentSettings.deliveryWilayas.push(wilayaData);
+    }
+
+    console.log(
+      "Wilayas AFTER update:",
+      currentSettings.deliveryWilayas.length,
+    );
+    console.log(
+      "All wilaya names:",
+      currentSettings.deliveryWilayas.map(
+        (w) => w.name + "(" + w.homePrice + ")",
+      ),
+    );
+
+    // Save settings
+    console.log("Saving to API...");
+    const saveResponse = await fetch(`${CONFIG.API_BASE}/settings`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(currentSettings),
+    });
+
+    if (saveResponse.ok) {
+      settings = currentSettings;
       console.log(
-        "Current settings:",
-        JSON.stringify(currentSettings, null, 2),
+        "SUCCESS: Saved",
+        currentSettings.deliveryWilayas.length,
+        "wilayas",
       );
-
-      // Initialize deliveryWilayas array if not exists
-      if (!currentSettings.deliveryWilayas) {
-        currentSettings.deliveryWilayas = [];
-        console.log("Initialized empty deliveryWilayas array");
-      }
-
-      // Add or update wilaya
-      if (index !== "") {
-        console.log("Updating wilaya at index:", index);
-        currentSettings.deliveryWilayas[parseInt(index)] = wilayaData;
-      } else {
-        console.log("Adding new wilaya:", wilayaData.name);
-        currentSettings.deliveryWilayas.push(wilayaData);
-      }
-      console.log(
-        "Updated deliveryWilayas:",
-        JSON.stringify(currentSettings.deliveryWilayas, null, 2),
-      );
-
-      // Save settings
-      console.log("Saving settings...");
-      const saveResponse = await fetch(`${CONFIG.API_BASE}/settings`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentSettings),
-      });
-      console.log("Save response status:", saveResponse.status);
-
-      if (saveResponse.ok) {
-        settings = currentSettings;
-        renderWilayasTable();
-        closeModal();
-        alert("Wilaya enregistrée avec succès");
-      } else {
-        throw new Error("Failed to save wilaya");
-      }
+      renderWilayasTable();
+      closeModal();
+      alert("Wilaya enregistrée avec succès");
+    } else {
+      console.error("Save failed, status:", saveResponse.status);
+      throw new Error("Failed to save wilaya");
     }
   } catch (error) {
     console.error("Error saving wilaya:", error);
