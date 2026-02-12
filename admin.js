@@ -938,8 +938,12 @@ function renderExistingImages(images) {
 
   images.forEach((img, index) => {
     const div = document.createElement("div");
-    div.className = "relative";
+    div.className = "relative image-preview-item";
     div.innerHTML = `
+      <button type="button" onclick="flipImage(this)" 
+        class="image-flip-btn" title="Inverser l'image">
+        <i class="fas fa-retweet"></i>
+      </button>
       <img src="${img}" class="w-20 h-20 object-cover rounded-lg" />
       <button type="button" onclick="deleteExistingImage('${img}', ${index})" 
         class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
@@ -949,6 +953,14 @@ function renderExistingImages(images) {
     `;
     previewContainer.appendChild(div);
   });
+}
+
+// Flip image
+function flipImage(btn) {
+  const imageContainer = btn.closest(".image-preview-item");
+  if (imageContainer) {
+    imageContainer.classList.toggle("flipped");
+  }
 }
 
 // Delete existing image

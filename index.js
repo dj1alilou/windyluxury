@@ -1357,8 +1357,6 @@ function changeProductImage(index) {
     const modalImage = document.getElementById("productDetailsImage");
     if (modalImage) {
       modalImage.src = images[index];
-      // Reset flip when changing images
-      modalImage.classList.remove("flipped");
     }
 
     // Update gallery thumbnails
@@ -1370,14 +1368,6 @@ function changeProductImage(index) {
         thumb.classList.toggle("border-transparent", i !== index);
       });
     }
-  }
-}
-
-// Flip product image in modal
-function flipProductImage() {
-  const modalImage = document.getElementById("productDetailsImage");
-  if (modalImage) {
-    modalImage.classList.toggle("flipped");
   }
 }
 
@@ -1433,14 +1423,9 @@ function selectSize(sizeItem, element) {
 
 function closeProductDetailsModal() {
   const modal = document.getElementById("productDetailsModal");
-  const modalImage = document.getElementById("productDetailsImage");
   if (modal) {
     modal.classList.remove("active");
     document.body.style.overflow = "";
-  }
-  // Reset image flip state
-  if (modalImage) {
-    modalImage.classList.remove("flipped");
   }
 }
 
@@ -2014,7 +1999,6 @@ window.scrollToTop = scrollToTop;
 window.changePage = changePage;
 window.showProductImage = showProductImage;
 window.changeProductImage = changeProductImage;
-window.flipProductImage = flipProductImage;
 window.closeProductDetailsModal = closeProductDetailsModal;
 window.addToCartFromDetails = addToCartFromDetails;
 window.buyNowFromDetails = buyNowFromDetails;

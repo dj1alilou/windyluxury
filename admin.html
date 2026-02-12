@@ -99,6 +99,39 @@
         font-size: 14px;
       }
 
+      /* Image flip button styles */
+      .image-flip-btn {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        z-index: 10;
+        font-size: 10px;
+      }
+
+      .image-flip-btn:hover {
+        background: rgba(102, 126, 234, 0.9);
+        transform: scale(1.1);
+      }
+
+      .image-preview-item.flipped img {
+        transform: scaleX(-1);
+      }
+
+      .image-preview-item img {
+        transition: transform 0.3s ease;
+      }
+
       .btn-primary {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
