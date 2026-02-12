@@ -1334,7 +1334,24 @@ function changeProductImage(index) {
   const product = currentProduct;
   if (!product) return;
 
-  const images = product.images || (product.image ? [product.image] : []);
+  const rawImages = product.images || (product.image ? [product.image] : []);
+  const images = rawImages
+    .map((img) => {
+      // Handle different image formats
+      if (typeof img === "object" && img !== null) {
+        const url = img.url || img.image;
+        if (typeof url === "string" && url.startsWith("http")) {
+          return url;
+        }
+        return undefined;
+      }
+      if (typeof img === "string" && img.startsWith("http")) {
+        return img;
+      }
+      return undefined;
+    })
+    .filter(Boolean);
+
   if (index >= 0 && index < images.length) {
     selectedImageIndex = index;
     const modalImage = document.getElementById("productDetailsImage");
