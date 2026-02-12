@@ -102,26 +102,35 @@
       /* Image flip button styles */
       .image-flip-btn {
         position: absolute;
-        top: 2px;
-        left: 2px;
-        background: rgba(0, 0, 0, 0.6);
+        top: 4px;
+        left: 4px;
+        background: rgba(0, 0, 0, 0.7);
         color: white;
         border: none;
         border-radius: 50%;
-        width: 24px;
-        height: 24px;
+        width: 28px;
+        height: 28px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: all 0.3s ease;
-        z-index: 10;
-        font-size: 10px;
+        z-index: 20;
+        font-size: 12px;
+        padding: 0;
       }
 
       .image-flip-btn:hover {
-        background: rgba(102, 126, 234, 0.9);
-        transform: scale(1.1);
+        background: rgba(102, 126, 234, 0.95);
+        transform: scale(1.15);
+      }
+
+      .image-flip-btn i {
+        margin: 0;
+      }
+
+      .image-preview-item {
+        overflow: visible !important;
       }
 
       .image-preview-item.flipped img {
