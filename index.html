@@ -1138,70 +1138,6 @@
         }
       }
 
-      .progress-wrapper {
-        width: 320px;
-        max-width: 85vw;
-      }
-
-      .progress-container {
-        background: #f0f0f0;
-        border-radius: 25px;
-        padding: 6px;
-        overflow: hidden;
-        position: relative;
-      }
-
-      .progress-bar {
-        height: 12px;
-        background: linear-gradient(
-          135deg,
-          #f093fb 0%,
-          #f5576c 50%,
-          #f093fb 100%
-        );
-        background-size: 200% 200%;
-        border-radius: 20px;
-        width: 0%;
-        position: relative;
-        overflow: hidden;
-        animation: gradientShift 2s ease infinite;
-      }
-
-      @keyframes gradientShift {
-        0%,
-        100% {
-          background-position: 0% 50%;
-        }
-        50% {
-          background-position: 100% 50%;
-        }
-      }
-
-      .progress-bar::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(
-          90deg,
-          transparent 0%,
-          rgba(255, 255, 255, 0.5) 50%,
-          transparent 100%
-        );
-        animation: shimmer 1s infinite;
-      }
-
-      @keyframes shimmer {
-        0% {
-          transform: translateX(-150%);
-        }
-        100% {
-          transform: translateX(150%);
-        }
-      }
-
       .loading-tip {
         font-family: "Montserrat", sans-serif;
         font-size: 13px;
@@ -1306,12 +1242,7 @@
       <p class="loading-subtitle">
         Nous préparons quelque chose de spécial pour vous…
       </p>
-      <div class="progress-wrapper">
-        <div class="progress-container">
-          <div id="progressBar" class="progress-bar"></div>
-        </div>
-      </div>
-      <p class="loading-tip">Le serveur démarre... merci de votre patience</p>
+      <p class="loading-tip">Cliquez sur le bouton ci-dessous pour entrer</p>
       <div class="dots-loading">
         <span></span>
         <span></span>
@@ -2166,38 +2097,15 @@
 
     <!-- Loading Screen Script -->
     <script>
-      // Loading Screen Animation
+      // Loading Screen - Simplified (no progress bar)
       document.addEventListener("DOMContentLoaded", function () {
         const loadingScreen = document.getElementById("loadingScreen");
-        const progressBar = document.getElementById("progressBar");
         const enterButton = document.getElementById("enterButton");
-        const loadingDuration = 7000; // 7 seconds
-        const updateInterval = 50;
-        let progress = 0;
-        let elapsed = 0;
 
-        function updateProgress() {
-          elapsed += updateInterval;
-          progress = (elapsed / loadingDuration) * 100;
-
-          if (progress >= 100) {
-            progress = 100;
-            progressBar.style.width = "100%";
-
-            // Show enter button with animation
-            if (enterButton) {
-              enterButton.classList.add("visible");
-            }
-
-            clearInterval(progressInterval);
-            return;
-          }
-
-          progressBar.style.width = progress + "%";
+        // Show enter button immediately with animation
+        if (enterButton) {
+          enterButton.classList.add("visible");
         }
-
-        // Start the progress bar animation
-        const progressInterval = setInterval(updateProgress, updateInterval);
 
         // Prevent body scrolling while loading
         document.body.style.overflow = "hidden";
