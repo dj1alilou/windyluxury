@@ -942,7 +942,7 @@ function renderExistingImages(images) {
     div.innerHTML = `
       <button type="button" onclick="flipImage(this)" 
         class="image-flip-btn" title="Inverser l'image">
-        <i class="fas fa-retweet"></i>
+        <i class="fas fa-arrows-alt-h"></i>
       </button>
       <img src="${img}" class="w-20 h-20 object-cover rounded-lg" />
       <button type="button" onclick="deleteExistingImage('${img}', ${index})" 
