@@ -1251,6 +1251,13 @@ function showProductImage(productId) {
     return img;
   });
 
+  console.log("Product images debug:", {
+    id: product.id,
+    rawImagesCount: rawImages.length,
+    imagesCount: images.length,
+    images: images,
+  });
+
   // Update modal content
   const modalImage = document.getElementById("productDetailsImage");
   const modalTitle = document.getElementById("productDetailsTitle");
