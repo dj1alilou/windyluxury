@@ -347,6 +347,13 @@
         height: 200px;
         object-fit: cover;
         background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%);
+        /* Prevent any image flipping or transformation */
+        transform: none !important;
+        image-orientation: from-image !important;
+        -moz-transform: none !important;
+        -webkit-transform: none !important;
+        /* Ensure proper image display */
+        display: block;
       }
 
       @media (min-width: 641px) {
