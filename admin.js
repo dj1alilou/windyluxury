@@ -940,16 +940,16 @@ function renderExistingImages(images) {
     const div = document.createElement("div");
     div.className = "relative image-preview-item";
     div.innerHTML = `
+      <img src="${img}" class="w-20 h-20 object-cover rounded-lg" />
       <button type="button" onclick="flipImage(this)" 
         class="image-flip-btn" title="Inverser l'image">
         <i class="fas fa-arrows-alt-h"></i>
       </button>
-      <img src="${img}" class="w-20 h-20 object-cover rounded-lg" />
       <button type="button" onclick="deleteExistingImage('${img}', ${index})" 
-        class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+        class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs z-10">
         <i class="fas fa-times"></i>
       </button>
-      ${index === 0 ? '<span class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-green-500 text-white text-xs px-1 rounded">رئيسية</span>' : ""}
+      ${index === 0 ? '<span class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-green-500 text-white text-xs px-1 rounded z-10">رئيسية</span>' : ""}
     `;
     previewContainer.appendChild(div);
   });
