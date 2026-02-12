@@ -1244,12 +1244,26 @@ function showProductImage(productId) {
 
   // Support both single image and multiple images - extract URLs from objects
   const rawImages = product.images || (product.image ? [product.image] : []);
-  const images = rawImages.map((img) => {
-    if (typeof img === "object") {
-      return img.image || img.url;
-    }
-    return img;
-  });
+  const images = rawImages
+    .map((img) => {
+      // Handle different image formats
+      if (typeof img === "object" && img !== null) {
+        // Cloudinary object format: { url: "...", publicId: "..." }
+        const url = img.url || img.image;
+        // Only return if it's a valid string URL
+        if (typeof url === "string" && url.startsWith("http")) {
+          return url;
+        }
+        // If no valid URL, return undefined (will be filtered out)
+        return undefined;
+      }
+      // Already a string URL
+      if (typeof img === "string" && img.startsWith("http")) {
+        return img;
+      }
+      return undefined;
+    })
+    .filter(Boolean); // Remove any undefined/null values
 
   console.log("Product images debug:", {
     id: product.id,
