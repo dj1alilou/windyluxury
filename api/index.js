@@ -583,10 +583,13 @@ module.exports = async (req, res) => {
         );
 
         if (existingSettings) {
+          // Merge settings - exclude _id from newSettings to avoid immutable field error
+          const { _id, ...newSettingsWithoutId } = newSettings;
+
           // Merge settings - preserve existing fields not in newSettings
           const mergedSettings = {
             ...existingSettings,
-            ...newSettings,
+            ...newSettingsWithoutId,
           };
 
           // For deliveryWilayas, use the new array directly
