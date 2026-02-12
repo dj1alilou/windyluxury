@@ -112,19 +112,45 @@ function defaultCategories() {
   ];
 }
 
-// Parse JSON body for serverless
-function parseBody(req) {
-  if (req.body) {
-    if (typeof req.body === "string") {
-      try {
-        return JSON.parse(req.body);
-      } catch (e) {
-        return {};
-      }
-    }
-    return req.body;
+// Parse JSON body for serverless (handles Buffer and string)
+function parseBody(body) {
+  console.log("parseBody input type:", typeof body);
+  console.log("parseBody isBuffer:", Buffer.isBuffer(body));
+
+  if (!body) {
+    console.log("parseBody: body is null/undefined, returning {}");
+    return {};
   }
-  return {};
+
+  // Handle Buffer (Vercel serverless)
+  if (Buffer.isBuffer(body)) {
+    console.log("parseBody: handling Buffer");
+    try {
+      const parsed = JSON.parse(body.toString());
+      console.log("parseBody: Buffer parsed successfully");
+      return parsed;
+    } catch (e) {
+      console.error("parseBody: Buffer parse error:", e);
+      return {};
+    }
+  }
+
+  // Handle string
+  if (typeof body === "string") {
+    console.log("parseBody: handling string");
+    try {
+      const parsed = JSON.parse(body);
+      console.log("parseBody: string parsed successfully");
+      return parsed;
+    } catch (e) {
+      console.error("parseBody: string parse error:", e);
+      return {};
+    }
+  }
+
+  // Already parsed object
+  console.log("parseBody: returning body as-is (object)");
+  return body;
 }
 
 // Extract form fields from multer req.body
