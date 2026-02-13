@@ -74,6 +74,7 @@ async function connectDB() {
 async function compressToWebP(buffer) {
   try {
     const compressedBuffer = await sharp(buffer)
+      .rotate() // Auto-rotate based on EXIF orientation
       .webp({ quality: 85 }) // High quality WebP (85% maintains quality while reducing size)
       .toBuffer();
     return compressedBuffer;
