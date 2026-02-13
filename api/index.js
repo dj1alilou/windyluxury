@@ -61,7 +61,6 @@ const categoryNameToId = {
 async function compressToWebP(buffer) {
   try {
     const compressedBuffer = await sharp(buffer)
-      .rotate() // Auto-rotate based on EXIF orientation
       .webp({ quality: 85 })
       .toBuffer();
     return compressedBuffer;
