@@ -765,6 +765,14 @@ function viewOrder(orderId) {
           <p class="text-sm text-gray-600">Date:</p>
           <p class="font-bold">${formatDate(order.createdAt)}</p>
         </div>
+        <div>
+          <p class="text-sm text-gray-600">Méthode de livraison:</p>
+          <p class="font-bold">${order.deliveryType === "home" ? "À domicile" : order.deliveryType === "office" ? "Bureau" : "-"}</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">Frais de livraison:</p>
+          <p class="font-bold">${(order.deliveryPrice || 0).toLocaleString()} DA</p>
+        </div>
       </div>
 
       <div>
