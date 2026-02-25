@@ -1170,38 +1170,51 @@ async function openOrderModal(productId) {
   modalName.textContent = product.title;
 
   // Handle size display in order modal
-  if (hasSizes) {
+  if (hasSizes && modalSizeDisplay) {
     modalSizeDisplay.classList.remove("hidden");
-    modalSelectedSize.textContent = selectedSize || "(اختر الحجم)";
+    if (modalSelectedSize) {
+      modalSelectedSize.textContent = selectedSize || "(اختر الحجم)";
+    }
 
     // Show and populate size dropdown
-    sizeSelectionOrder.classList.remove("hidden");
-    customerSize.required = true;
+    if (sizeSelectionOrder) {
+      sizeSelectionOrder.classList.remove("hidden");
+    }
+    if (customerSize) {
+      customerSize.required = true;
 
-    // Populate sizes from product (only available sizes)
-    customerSize.innerHTML = '<option value="">اختر الحجم</option>';
-    product.sizes.forEach((sizeItem) => {
-      const sizeName = typeof sizeItem === "string" ? sizeItem : sizeItem.size;
-      const sizeStock = typeof sizeItem === "object" ? sizeItem.stock : 999;
-      const isSoldOut = sizeStock <= 0;
+      // Populate sizes from product (only available sizes)
+      customerSize.innerHTML = '<option value="">اختر الحجم</option>';
+      product.sizes.forEach((sizeItem) => {
+        const sizeName =
+          typeof sizeItem === "string" ? sizeItem : sizeItem.size;
+        const sizeStock = typeof sizeItem === "object" ? sizeItem.stock : 999;
+        const isSoldOut = sizeStock <= 0;
 
-      if (!isSoldOut) {
-        const option = document.createElement("option");
-        option.value = sizeName;
-        option.textContent = sizeName;
-        customerSize.appendChild(option);
-      }
-    });
+        if (!isSoldOut) {
+          const option = document.createElement("option");
+          option.value = sizeName;
+          option.textContent = sizeName;
+          customerSize.appendChild(option);
+        }
+      });
+    }
 
     // Set selected size if already selected
     if (selectedSize) {
       customerSize.value = selectedSize;
     }
   } else {
-    modalSizeDisplay.classList.add("hidden");
-    sizeSelectionOrder.classList.add("hidden");
-    customerSize.required = false;
-    customerSize.value = "";
+    if (modalSizeDisplay) {
+      modalSizeDisplay.classList.add("hidden");
+    }
+    if (sizeSelectionOrder) {
+      sizeSelectionOrder.classList.add("hidden");
+    }
+    if (customerSize) {
+      customerSize.required = false;
+      customerSize.value = "";
+    }
   }
 
   await updateOrderModalDeliveryPrice();
