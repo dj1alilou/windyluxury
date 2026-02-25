@@ -567,7 +567,7 @@ function addToCart(productId, selectedColor = null, sizeItem = null) {
     sizeItem,
   );
 
-  const product = allProducts.find((p) => p.id == productId);
+  const product = allProducts.find((p) => String(p.id) === String(productId));
   if (!product) {
     console.error("Product not found:", productId);
     showNotification("Produit non trouvé");
@@ -1131,11 +1131,25 @@ function changePage(category, page) {
 
 // Quick Order Modal
 async function openOrderModal(productId) {
-  const product = allProducts.find((p) => p.id == productId);
+  const product = allProducts.find((p) => String(p.id) === String(productId));
   if (!product) {
+    console.log(
+      "Product not found, productId:",
+      productId,
+      "allProducts:",
+      allProducts.slice(0, 3),
+    );
     alert("Produit non trouvé");
     return;
   }
+
+  console.log(
+    "Product found:",
+    product.id,
+    product.title,
+    "stock:",
+    product.stock,
+  );
 
   // Check stock for products with sizes
   const hasSizes =
@@ -1148,9 +1162,12 @@ async function openOrderModal(productId) {
       alert("Désolé, ce produit n'est pas disponible pour le moment.");
       return;
     }
-  } else if (product.stock <= 0) {
-    alert("Désolé, ce produit n'est pas disponible pour le moment.");
-    return;
+  } else {
+    const stock = parseInt(product.stock) || 0;
+    if (stock <= 0) {
+      alert("Désolé, ce produit n'est pas disponible pour le moment.");
+      return;
+    }
   }
 
   currentProduct = product;
@@ -1285,8 +1302,14 @@ async function updateOrderModalDeliveryPrice() {
 
 // Product Details Modal
 function showProductImage(productId) {
-  const product = allProducts.find((p) => p.id == productId);
-  if (!product) return;
+  const product = allProducts.find((p) => String(p.id) === String(productId));
+  if (!product) {
+    console.log(
+      "Product not found for showProductImage, productId:",
+      productId,
+    );
+    return;
+  }
 
   currentProduct = product;
   selectedSize = null; // Reset size selection
