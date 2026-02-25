@@ -482,13 +482,21 @@ function updateCategoryFilter() {
 function filterProducts() {
   const search = document.getElementById("productSearch").value.toLowerCase();
   const category = document.getElementById("categoryFilter").value;
+  const featured = document.getElementById("featuredFilter").value;
 
   const filtered = products.filter((p) => {
     const matchSearch =
       (p.name || "").toLowerCase().includes(search) ||
       (p.title || "").toLowerCase().includes(search);
     const matchCategory = !category || p.category === category;
-    return matchSearch && matchCategory;
+    const matchFeatured =
+      featured === "" ||
+      (featured === "true" && p.featured === true) ||
+      (featured === "false" &&
+        (p.featured === false ||
+          p.featured === undefined ||
+          p.featured === null));
+    return matchSearch && matchCategory && matchFeatured;
   });
 
   renderProductsTable(filtered);
