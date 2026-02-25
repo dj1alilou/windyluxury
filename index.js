@@ -962,6 +962,7 @@ function renderProducts(category, page = 1) {
 
     const productCard = document.createElement("div");
     productCard.className = "product-card";
+    productCard.dataset.productId = product.id;
 
     productCard.innerHTML = `
             <div class="relative">
@@ -973,7 +974,7 @@ function renderProducts(category, page = 1) {
                                 alt="${product.title}" 
                                 class="product-image"
                                 loading="lazy"
-                                onclick="showProductImage('${product.id}')"
+                                data-product-id="${product.id}"
                                 style="cursor: pointer;"
                                 onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNGMEYwRjAiLz48cGF0aCBkPSJNNTAgNzVMMTAwIDEyNUwxNTAgNzUiIHN0cm9rZT0iI0YwNTc2QyIgc3Ryb2tlLXdpZHRoPSIyIi8+PGNpcmNsZSBjeD0iMTAwIiBjeT0iNzUiIHI9IjEwIiBmaWxsPSIjRjA1NzZDIi8+PGNpcmNsZSBjeD0iNTAiIGN5PSIxMjUiIHI9IjEwIiBmaWxsPSIjRjA1NzZDIi8+PGNpcmNsZSBjeD0iMTUwIiBjeT0iMTI1IiByPSIxMCIgZmlsbD0iI0YwNTc2QyIvPjwvc3ZnPg==';\">`
                         : `<div class="fallback-image">
@@ -991,13 +992,13 @@ function renderProducts(category, page = 1) {
                 <div class="product-price">${formatPrice(product.price)} DA</div>
                 
                 <div class="product-actions">
-                    <button onclick="openOrderModal('${product.id}')" 
+                    <button data-action="buy" data-product-id="${product.id}" 
                             class="action-btn buy"
                             ${!isProductAvailable ? "disabled" : ""}>
                         <i class="fas fa-shopping-bag"></i>
                         ${!isProductAvailable ? "Non disponible" : "Commander"}
                     </button>
-                    <button onclick="addToCart('${product.id}')" 
+                    <button data-action="cart" data-product-id="${product.id}" 
                             class="action-btn cart"
                             ${!isProductAvailable ? "disabled" : ""}>
                         <i class="fas fa-cart-plus"></i>
@@ -1008,6 +1009,42 @@ function renderProducts(category, page = 1) {
         `;
 
     container.appendChild(productCard);
+  });
+
+  // Add event delegation for product cards
+  container.addEventListener("click", function (e) {
+    // Handle clicks on product card (entire card)
+    const card = e.target.closest(".product-card");
+    if (card && !e.target.closest("button")) {
+      const productId = card.dataset.productId;
+      if (productId) {
+        showProductImage(productId);
+      }
+      return;
+    }
+
+    // Handle clicks on product image
+    const img = e.target.closest(".product-image");
+    if (img) {
+      const productId = img.dataset.productId;
+      if (productId) {
+        showProductImage(productId);
+      }
+      return;
+    }
+
+    // Handle clicks on action buttons
+    const button = e.target.closest("[data-action]");
+    if (button) {
+      const productId = button.dataset.productId;
+      const action = button.dataset.action;
+
+      if (action === "buy") {
+        openOrderModal(productId);
+      } else if (action === "cart") {
+        addToCart(productId);
+      }
+    }
   });
 
   // Render pagination controls
