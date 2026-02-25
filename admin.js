@@ -71,6 +71,9 @@ function setupEventListeners() {
     .getElementById("categoryFilter")
     .addEventListener("change", filterProducts);
   document
+    .getElementById("featuredFilter")
+    .addEventListener("change", filterProducts);
+  document
     .getElementById("orderStatusFilter")
     .addEventListener("change", loadOrders);
 }
