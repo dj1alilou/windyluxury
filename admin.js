@@ -592,7 +592,7 @@ async function handleProductSubmit(e) {
   const oldPrice = document.getElementById("productOldPrice").value;
   const stock = document.getElementById("productStock").value;
   const description = document.getElementById("productDescription").value;
-  const featured = document.getElementById("productFeatured").value;
+  const featured = document.getElementById("productFeatured").value === "true";
   const sizesElement = document.getElementById("productSizes");
   const sizesInput = sizesElement ? sizesElement.value : "";
 
