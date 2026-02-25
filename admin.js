@@ -492,13 +492,9 @@ function filterProducts() {
       (p.name || "").toLowerCase().includes(search) ||
       (p.title || "").toLowerCase().includes(search);
     const matchCategory = !category || p.category === category;
-    const matchFeatured =
-      featured === "" ||
-      (featured === "true" && p.featured === true) ||
-      (featured === "false" &&
-        (p.featured === false ||
-          p.featured === undefined ||
-          p.featured === null));
+    // Handle featured as string or boolean
+    const productFeatured = String(p.featured);
+    const matchFeatured = featured === "" || productFeatured === featured;
     return matchSearch && matchCategory && matchFeatured;
   });
 
