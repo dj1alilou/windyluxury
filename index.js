@@ -2087,3 +2087,4 @@ window.debugCheckSiteProducts = () => {
   );
   console.log("Sample product:", allProducts[0]);
 };
+" "  
