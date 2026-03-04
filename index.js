@@ -811,8 +811,13 @@ async function updateCartModal() {
       cartItem.className = "cart-item";
 
       const itemTotal = item.price * item.quantity;
+      // Use optimized thumbnail image (150px)
+      const itemImage = item.image ? getOptimizedImageUrl(item.image, 150) : "";
 
       cartItem.innerHTML = `
+                <div class="cart-item-image">
+                    ${itemImage ? `<img src="${itemImage}" alt="${item.title}" onerror="this.style.display='none'">` : ""}
+                </div>
                 <div class="cart-item-info">
                     <div class="cart-item-title">${item.title} ${item.selectedColor ? `<span class="text-xs text-gray-600">(${item.selectedColor})</span>` : ""} ${item.selectedSize ? `<span class="text-xs text-gray-600">- Taille: ${item.selectedSize}</span>` : ""}</div>
                     <div class="cart-item-price">${item.price.toLocaleString("fr-FR")} DA × ${item.quantity}</div>
@@ -1155,7 +1160,24 @@ function changePage(category, page) {
 }
 
 // Quick Order Modal
+let modalQuantity = 1; // Track quantity in order modal
+
+// Update quantity in order modal
+function updateModalQuantity(change) {
+  const product = currentProduct;
+  if (!product) return;
+
+  const maxQuantity = product.stock || 10;
+  modalQuantity = Math.max(1, Math.min(maxQuantity, modalQuantity + change));
+
+  const quantityDisplay = document.getElementById("modalQuantity");
+  if (quantityDisplay) quantityDisplay.textContent = modalQuantity;
+}
+
 async function openOrderModal(productId) {
+  modalQuantity = 1; // Reset quantity to 1 when opening modal
+  const quantityDisplay = document.getElementById("modalQuantity");
+  if (quantityDisplay) quantityDisplay.textContent = modalQuantity;
   const product = allProducts.find((p) => String(p.id) === String(productId));
   if (!product) {
     console.log(
@@ -1964,7 +1986,7 @@ function setupEventListeners() {
         wilaya,
         selectedDeliveryOption,
       );
-      const totalPrice = productPrice + deliveryPrice;
+      const totalPrice = productPrice * modalQuantity + deliveryPrice;
 
       const orderData = {
         customerName: name,
@@ -1975,14 +1997,14 @@ function setupEventListeners() {
             id: currentProduct.id,
             title: currentProduct.title,
             image: currentProduct.image,
-            quantity: 1,
+            quantity: modalQuantity,
             price: productPrice,
             size: size,
           },
         ],
         deliveryType: selectedDeliveryOption,
         deliveryPrice: deliveryPrice,
-        subtotal: productPrice,
+        subtotal: productPrice * modalQuantity,
         total: totalPrice,
         status: "pending",
         date: new Date().toISOString(),
@@ -2004,7 +2026,10 @@ function setupEventListeners() {
         const savedOrder = await apiRes.json();
 
         // Update local product stock with response decrement assumption
-        currentProduct.stock = Math.max(0, currentProduct.stock - 1);
+        currentProduct.stock = Math.max(
+          0,
+          currentProduct.stock - modalQuantity,
+        );
 
         showSuccessMessage(savedOrder.id || "commande", totalPrice);
 
@@ -2104,6 +2129,7 @@ window.closeCartModal = closeCartModal;
 window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
 window.updateCartItemQuantity = updateCartItemQuantity;
+window.updateModalQuantity = updateModalQuantity;
 window.emptyCart = emptyCart;
 window.selectDeliveryOption = selectDeliveryOption;
 window.closeSuccessModal = closeSuccessModal;
