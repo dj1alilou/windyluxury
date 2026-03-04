@@ -212,6 +212,24 @@ document.addEventListener("DOMContentLoaded", async function () {
   updateCartDisplay();
 });
 
+// Helper function to transform Cloudinary URLs with optimizations
+function getOptimizedImageUrl(url, width = 400) {
+  if (!url || !url.includes("cloudinary.com")) return url;
+
+  // Insert Cloudinary transformation parameters
+  // URL format: .../image/upload/{public_id}.{format}
+  // We need: .../image/upload/w_400,q_auto,f_auto/{public_id}.{format}
+  return url.replace(
+    "/image/upload/",
+    `/image/upload/w_${width},c_scale,q_auto,f_auto/`,
+  );
+}
+
+// Helper function to get thumbnail (smaller size)
+function getThumbnailUrl(url) {
+  return getOptimizedImageUrl(url, 200);
+}
+
 // Load products from API with pagination (10 products per page)
 async function loadProductsFromApi() {
   showLoading(true);
@@ -958,7 +976,8 @@ function renderProducts(category, page = 1) {
       }
       return img;
     });
-    const mainImage = images[0] || null;
+    // Use optimized thumbnail URL for product grid (width: 400)
+    const mainImage = images[0] ? getOptimizedImageUrl(images[0], 400) : null;
 
     const productCard = document.createElement("div");
     productCard.className = "product-card";
@@ -1338,6 +1357,11 @@ function showProductImage(productId) {
     })
     .filter(Boolean); // Remove any undefined/null values
 
+  // Use optimized images for modal (main: 800px, thumbnails: 150px)
+  const optimizedMainImage = images[0]
+    ? getOptimizedImageUrl(images[0], 800)
+    : "";
+
   console.log("Product images debug:", {
     id: product.id,
     rawImagesCount: rawImages.length,
@@ -1355,19 +1379,19 @@ function showProductImage(productId) {
   const imageGallery = document.getElementById("imageGallery");
 
   if (modalImage) {
-    modalImage.src = images[0] || "";
+    modalImage.src = optimizedMainImage;
     modalImage.onerror = function () {
       this.src =
         "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNGMEYwRjAiLz48cGF0aCBkPSJNNTAgNzVMMTAwIDEyNUwxNTAgNzUiIHN0cm9rZT0iI0YwNTc2QyIgc3Ryb2tlLXdpZHRoPSIyIi8+PGNpcmNsZSBjeD0iMTAwIiBjeT0iNzUiIHI9IjEwIiBmaWxsPSIjRjA1NzZDIi8+PGNpcmNsZSBjeD0iNTAiIGN5PSIxMjUiIHI9IjEwIiBmaWxsPSIjRjA1NzZDIi8+PGNpcmNsZSBjeD0iMTUwIiBjeT0iMTI1IiByPSIxMCIgZmlsbD0iI0YwNTc2QyIvPjwvc3ZnPg==";
     };
   }
 
-  // Render image gallery thumbnails
+  // Render image gallery thumbnails (optimized: 150px width)
   if (imageGallery && images.length > 1) {
     imageGallery.innerHTML = images
       .map(
         (img, index) => `
-      <img src="${img}" 
+      <img src="${getOptimizedImageUrl(img, 150)}" 
            class="w-16 h-16 object-cover rounded cursor-pointer border-2 ${index === 0 ? "border-purple-600" : "border-transparent"}" 
            onclick="changeProductImage(${index})"
            onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIGZpbGw9IiNGMEYwRjAiLz48cGF0aCBkPSJNMjAgMjBsMjAgMjBsMjAtMjAiIHN0cm9rZT0iI0YwNTc2QyIgc3Ryb2tlLXdpZHRoPSIyIi8+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMTAiIGZpbGw9IiNGMDU3NkMiLz48Y2lyY2xlIGN4PSI0MCIgY3k9IjIwIiByPSIxMCIgZmlsbD0iI0YwNTc2QyIvPjwvc3ZnPg==';">
@@ -1429,7 +1453,8 @@ function changeProductImage(index) {
     selectedImageIndex = index;
     const modalImage = document.getElementById("productDetailsImage");
     if (modalImage) {
-      modalImage.src = images[index];
+      // Use optimized image (800px width) when changing product image
+      modalImage.src = getOptimizedImageUrl(images[index], 800);
     }
 
     // Update gallery thumbnails
@@ -2087,4 +2112,4 @@ window.debugCheckSiteProducts = () => {
   );
   console.log("Sample product:", allProducts[0]);
 };
-" "  
+(" ");
