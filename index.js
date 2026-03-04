@@ -641,7 +641,13 @@ function addToCart(productId, selectedColor = null, sizeItem = null) {
   );
 
   if (existingItem) {
-    existingItem.quantity += 1;
+    // Only increase quantity if stock allows
+    const maxQuantity = hasSizeItem ? sizeStock : product.stock;
+    if (existingItem.quantity < maxQuantity) {
+      existingItem.quantity += 1;
+    } else {
+      showNotification("Quantité maximale atteinte pour ce produit.");
+    }
   } else {
     shoppingCart.push({
       id: product.id,
@@ -1783,15 +1789,27 @@ function setupEventListeners() {
       );
       const totalPrice = subtotal + deliveryPrice;
 
-      const products = shoppingCart.map((item) => ({
-        id: item.id,
-        title: item.title,
-        image: item.image,
-        color: item.selectedColor,
-        quantity: item.quantity,
-        price: item.price,
-        size: item.selectedSize,
-      }));
+      // Combine duplicate products (same id + color + size) into one entry
+      const productMap = new Map();
+      shoppingCart.forEach((item) => {
+        const key = `${item.id}-${item.selectedColor || "none"}-${item.selectedSize || "none"}`;
+        if (productMap.has(key)) {
+          const existing = productMap.get(key);
+          existing.quantity += item.quantity;
+        } else {
+          productMap.set(key, {
+            id: item.id,
+            title: item.title,
+            image: item.image,
+            color: item.selectedColor,
+            quantity: item.quantity,
+            price: item.price,
+            size: item.selectedSize,
+          });
+        }
+      });
+
+      const products = Array.from(productMap.values());
 
       const orderData = {
         customerName: name,
