@@ -7,6 +7,7 @@ const fs = require("fs");
 const { MongoClient } = require("mongodb");
 const cloudinary = require("cloudinary").v2;
 const sharp = require("sharp");
+const ExcelJS = require("exceljs");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -600,7 +601,7 @@ function cleanupUploads() {
   }
 }
 
-// ZR Express CSV Export
+// ZR Express Excel Export
 app.get("/api/orders/export/zrexpress", async (req, res) => {
   try {
     let orders = [];
@@ -638,8 +639,15 @@ app.get("/api/orders/export/zrexpress", async (req, res) => {
       }
     }
 
-    // ZR Express CSV format
-    const headers = [
+    // Create Excel workbook
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "windy.luxury";
+    workbook.created = new Date();
+
+    const worksheet = workbook.addWorksheet("ZR Express Orders");
+
+    // Add header row with styling
+    const headerRow = worksheet.addRow([
       "nom complet",
       "telephone1",
       "telephone2",
@@ -655,15 +663,34 @@ app.get("/api/orders/export/zrexpress", async (req, res) => {
       "ID",
       "Stopdesk",
       "Nom stopDesk",
-    ];
+    ]);
 
-    const rows = orders.map((order) => {
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFEC4899" },
+      };
+      cell.font = {
+        bold: true,
+        color: { argb: "FFFFFFFF" },
+      };
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+
+    // Add data rows
+    orders.forEach((order) => {
       const productNames = order.products?.map((p) => p.title).join(", ") || "";
       const quantities =
         order.products?.map((p) => p.quantity).join(", ") || "";
       const firstProduct = order.products?.[0] || {};
 
-      return [
+      worksheet.addRow([
         order.customerName || "",
         order.customerPhone || "",
         order.customerPhone2 || "",
@@ -679,22 +706,41 @@ app.get("/api/orders/export/zrexpress", async (req, res) => {
         order.id || "",
         "",
         "",
-      ];
+      ]);
     });
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
-      ),
-    ].join("\n");
+    // Set column widths
+    worksheet.columns = [
+      { width: 20 }, // nom complet
+      { width: 15 }, // telephone1
+      { width: 15 }, // telephone2
+      { width: 30 }, // produit
+      { width: 10 }, // quantite
+      { width: 15 }, // Sku
+      { width: 15 }, // type de stock
+      { width: 30 }, // Adresse
+      { width: 15 }, // Wilaya
+      { width: 15 }, // Commune
+      { width: 20 }, // prix total
+      { width: 25 }, // Note
+      { width: 15 }, // ID
+      { width: 15 }, // Stopdesk
+      { width: 15 }, // Nom stopDesk
+    ];
 
-    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    // Set response headers for Excel download
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="ZR_Express_${Date.now()}.csv"`,
+      `attachment; filename="ZR_Express_${Date.now()}.xlsx"`,
     );
-    res.send(csvContent);
+
+    // Send Excel file
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (error) {
     console.error("Error exporting orders:", error);
     res.status(500).json({ error: error.message });
