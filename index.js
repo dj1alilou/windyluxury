@@ -221,7 +221,7 @@ function getOptimizedImageUrl(url, width = 400) {
   // We need: .../image/upload/w_400,q_auto,f_auto/{public_id}.{format}
   return url.replace(
     "/image/upload/",
-    `/image/upload/w_${width},c_scale,q_auto,f_auto/`,
+    `/image/upload/w_${width},c_scale,q_auto:low,f_auto/`,
   );
 }
 
@@ -816,7 +816,7 @@ async function updateCartModal() {
 
       cartItem.innerHTML = `
                 <div class="cart-item-image">
-                    ${itemImage ? `<img src="${itemImage}" alt="${item.title}" onerror="this.style.display='none'">` : ""}
+                    ${itemImage ? `<img src="${getOptimizedImageUrl(itemImage, 100)}" alt="${item.title}" loading="lazy" onerror="this.style.display='none'">` : ""}
                 </div>
                 <div class="cart-item-info">
                     <div class="cart-item-title">${item.title} ${item.selectedColor ? `<span class="text-xs text-gray-600">(${item.selectedColor})</span>` : ""} ${item.selectedSize ? `<span class="text-xs text-gray-600">- Taille: ${item.selectedSize}</span>` : ""}</div>
@@ -1421,6 +1421,7 @@ function showProductImage(productId) {
         (img, index) => `
       <img src="${getOptimizedImageUrl(img, 150)}" 
            class="w-16 h-16 object-cover rounded cursor-pointer border-2 ${index === 0 ? "border-purple-600" : "border-transparent"}" 
+           loading="lazy"
            onclick="changeProductImage(${index})"
            onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIGZpbGw9IiNGMEYwRjAiLz48cGF0aCBkPSJNMjAgMjBsMjAgMjBsMjAtMjAiIHN0cm9rZT0iI0YwNTc2QyIgc3Ryb2tlLXdpZHRoPSIyIi8+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMTAiIGZpbGw9IiNGMDU3NkMiLz48Y2lyY2xlIGN4PSI0MCIgY3k9IjIwIiByPSIxMCIgZmlsbD0iI0YwNTc2QyIvPjwvc3ZnPg==';">
     `,
