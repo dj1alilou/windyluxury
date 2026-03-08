@@ -819,7 +819,9 @@ async function updateCartModal() {
                     ${itemImage ? `<img src="${getOptimizedImageUrl(itemImage, 100)}" alt="${item.title}" loading="lazy" onerror="this.style.display='none'">` : ""}
                 </div>
                 <div class="cart-item-info">
-                    <div class="cart-item-title">${item.title} ${item.selectedColor ? `<span class="text-xs text-gray-600">(${item.selectedColor})</span>` : ""} ${item.selectedSize ? `<span class="text-xs text-gray-600">- Taille: ${item.selectedSize}</span>` : ""}</div>
+                    <div class="cart-item-title" title="${item.title}">${item.title}</div>
+                    ${item.selectedColor ? `<div class="text-xs text-gray-500">Couleur: ${item.selectedColor}</div>` : ""}
+                    ${item.selectedSize ? `<div class="text-xs text-gray-500">Taille: ${item.selectedSize}</div>` : ""}
                     <div class="cart-item-price">${item.price.toLocaleString("fr-FR")} DA × ${item.quantity}</div>
                 </div>
                 <div class="cart-item-actions">
