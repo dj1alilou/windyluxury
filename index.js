@@ -1246,7 +1246,6 @@ async function openOrderModal(productId) {
 
   const modalName = document.getElementById("modalProductName");
   const modalPrice = document.getElementById("modalProductPrice");
-  const modalImage = document.getElementById("modalProductImage");
   const modalSizeDisplay = document.getElementById("modalSizeDisplay");
   const modalSelectedSize = document.getElementById("modalSelectedSize");
   const sizeSelectionOrder = document.getElementById("sizeSelectionOrder");
@@ -1258,22 +1257,6 @@ async function openOrderModal(productId) {
   }
 
   modalName.textContent = product.title;
-
-  // Set product image in order modal
-  if (modalImage) {
-    const images = product.images || (product.image ? [product.image] : []);
-    if (images.length > 0) {
-      const firstImage = typeof images[0] === 'object' ? images[0].url || images[0].image : images[0];
-      if (firstImage) {
-        modalImage.src = getOptimizedImageUrl(firstImage, 400);
-        modalImage.style.display = "block";
-      } else {
-        modalImage.style.display = "none";
-      }
-    } else {
-      modalImage.style.display = "none";
-    }
-  }
 
   // Handle size display in order modal
   if (hasSizes && modalSizeDisplay) {
