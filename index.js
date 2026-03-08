@@ -1049,41 +1049,44 @@ function renderProducts(category, page = 1) {
     container.appendChild(productCard);
   });
 
-  // Add event delegation for product cards
-  container.addEventListener("click", function (e) {
-    // Handle clicks on product card (entire card)
-    const card = e.target.closest(".product-card");
-    if (card && !e.target.closest("button")) {
-      const productId = card.dataset.productId;
-      if (productId) {
-        showProductImage(productId);
+  // Add event delegation for product cards (only once)
+  if (!container.dataset.eventsAttached) {
+    container.dataset.eventsAttached = "true";
+    container.addEventListener("click", function (e) {
+      // Handle clicks on product card (entire card)
+      const card = e.target.closest(".product-card");
+      if (card && !e.target.closest("button")) {
+        const productId = card.dataset.productId;
+        if (productId) {
+          showProductImage(productId);
+        }
+        return;
       }
-      return;
-    }
 
-    // Handle clicks on product image
-    const img = e.target.closest(".product-image");
-    if (img) {
-      const productId = img.dataset.productId;
-      if (productId) {
-        showProductImage(productId);
+      // Handle clicks on product image
+      const img = e.target.closest(".product-image");
+      if (img) {
+        const productId = img.dataset.productId;
+        if (productId) {
+          showProductImage(productId);
+        }
+        return;
       }
-      return;
-    }
 
-    // Handle clicks on action buttons
-    const button = e.target.closest("[data-action]");
-    if (button) {
-      const productId = button.dataset.productId;
-      const action = button.dataset.action;
+      // Handle clicks on action buttons
+      const button = e.target.closest("[data-action]");
+      if (button) {
+        const productId = button.dataset.productId;
+        const action = button.dataset.action;
 
-      if (action === "buy") {
-        openOrderModal(productId);
-      } else if (action === "cart") {
-        addToCart(productId);
+        if (action === "buy") {
+          openOrderModal(productId);
+        } else if (action === "cart") {
+          addToCart(productId);
+        }
       }
-    }
-  });
+    });
+  }
 
   // Render pagination controls
   renderPagination(category, page, totalPages);
