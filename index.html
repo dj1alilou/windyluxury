@@ -628,6 +628,57 @@
         border-radius: 8px;
       }
 
+      .quantity-input {
+        width: 50px;
+        height: 30px;
+        text-align: center;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        background: #fff;
+      }
+
+      .quantity-input:focus {
+        outline: none;
+        border-color: #f5576c;
+        box-shadow: 0 0 0 2px rgba(245, 87, 108, 0.2);
+      }
+
+      .modal-quantity-input {
+        height: 36px;
+        text-align: center;
+        border: 1px solid #f8b4c4;
+        border-radius: 8px;
+        background: white;
+      }
+
+      .modal-quantity-input:focus {
+        outline: none;
+        border-color: #f5576c;
+        box-shadow: 0 0 0 2px rgba(245, 87, 108, 0.2);
+      }
+
+      /* Hide number input arrows */
+      .quantity-input::-webkit-outer-spin-button,
+      .quantity-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .quantity-input[type=number] {
+        -moz-appearance: textfield;
+      }
+
+      .modal-quantity-input::-webkit-outer-spin-button,
+      .modal-quantity-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .modal-quantity-input[type=number] {
+        -moz-appearance: textfield;
+      }
+
       .quantity-btn {
         width: 32px;
         height: 32px;
@@ -2059,10 +2110,14 @@
               >
                 <i class="fas fa-minus"></i>
               </button>
-              <span
-                class="text-lg font-bold text-gray-800 w-8 text-center"
+              <input
+                type="number"
+                class="modal-quantity-input text-lg font-bold text-gray-800 w-16 text-center"
                 id="modalQuantity"
-                >1</span
+                value="1"
+                min="1"
+                onchange="updateModalQuantity(parseInt(this.value) - getCurrentModalQuantity())"
+                onkeyup="if(event.key === 'Enter') { updateModalQuantity(parseInt(this.value) - getCurrentModalQuantity()); blur(); }"
               >
               <button
                 type="button"

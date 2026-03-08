@@ -827,7 +827,15 @@ async function updateCartModal() {
                         <button class="quantity-btn add" onclick="updateCartItemQuantity('${item.id}', ${item.quantity + 1}, '${item.selectedSize || ""}')">
                             <i class="fas fa-plus"></i>
                         </button>
-                        <span class="quantity-display">${item.quantity}</span>
+                        <input 
+                            type="number" 
+                            class="quantity-input" 
+                            value="${item.quantity}" 
+                            min="1" 
+                            max="${item.hasSizes ? 999 : (item.stock || 999)}"
+                            onchange="updateCartItemQuantity('${item.id}', parseInt(this.value) || 1, '${item.selectedSize || ""}')"
+                            onkeyup="if(event.key === 'Enter') updateCartItemQuantity('${item.id}', parseInt(this.value) || 1, '${item.selectedSize || ""}')"
+                        >
                         <button class="quantity-btn remove" onclick="updateCartItemQuantity('${item.id}', ${item.quantity - 1}, '${item.selectedSize || ""}')">
                             <i class="fas fa-minus"></i>
                         </button>
@@ -1162,22 +1170,34 @@ function changePage(category, page) {
 // Quick Order Modal
 let modalQuantity = 1; // Track quantity in order modal
 
+// Helper function to get current modal quantity
+function getCurrentModalQuantity() {
+  return modalQuantity;
+}
+
 // Update quantity in order modal
 function updateModalQuantity(change) {
   const product = currentProduct;
   if (!product) return;
 
   const maxQuantity = product.stock || 10;
-  modalQuantity = Math.max(1, Math.min(maxQuantity, modalQuantity + change));
+  
+  // If change is provided, use it as a delta; otherwise set directly
+  if (typeof change === 'number') {
+    modalQuantity = Math.max(1, Math.min(maxQuantity, modalQuantity + change));
+  } else {
+    // Direct quantity set
+    modalQuantity = Math.max(1, Math.min(maxQuantity, parseInt(change) || 1));
+  }
 
   const quantityDisplay = document.getElementById("modalQuantity");
-  if (quantityDisplay) quantityDisplay.textContent = modalQuantity;
+  if (quantityDisplay) quantityDisplay.value = modalQuantity;
 }
 
 async function openOrderModal(productId) {
   modalQuantity = 1; // Reset quantity to 1 when opening modal
   const quantityDisplay = document.getElementById("modalQuantity");
-  if (quantityDisplay) quantityDisplay.textContent = modalQuantity;
+  if (quantityDisplay) quantityDisplay.value = modalQuantity;
   const product = allProducts.find((p) => String(p.id) === String(productId));
   if (!product) {
     console.log(
@@ -2131,6 +2151,7 @@ window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
 window.updateCartItemQuantity = updateCartItemQuantity;
 window.updateModalQuantity = updateModalQuantity;
+window.getCurrentModalQuantity = getCurrentModalQuantity;
 window.emptyCart = emptyCart;
 window.selectDeliveryOption = selectDeliveryOption;
 window.closeSuccessModal = closeSuccessModal;
