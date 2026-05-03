@@ -42,6 +42,7 @@ const ZR_EXPRESS_BASE_URL = "https://api.zrexpress.app";
 const zrExpressApi = axios.create({
   baseURL: ZR_EXPRESS_BASE_URL,
   headers: {
+    "X-Tenant": ZR_EXPRESS_TENANT_ID,
     "X-Api-Key": ZR_EXPRESS_API_KEY,
     "Content-Type": "application/json",
   },
@@ -440,6 +441,12 @@ app.put("/api/orders/:id/status", async (req, res) => {
         let order = null;
         if (db) {
           order = await db.collection("orders").findOne({ id });
+        } else {
+          const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
+          if (fs.existsSync(ORDERS_FILE)) {
+            const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
+            order = orders.find((o) => o.id === id);
+          }
         }
         
         if (order && !order.deliveryTrackingNumber) {
@@ -448,19 +455,20 @@ app.put("/api/orders/:id/status", async (req, res) => {
               name: order.customerName,
               phone: order.customerPhone,
               phone2: order.customerPhone2,
+            },
+            deliveryAddress: {
               address: order.address,
               wilaya: order.wilaya,
               commune: order.commune,
             },
-            products: order.products?.map((p) => ({
+            orderedProducts: order.products?.map((p) => ({
               name: p.title,
               quantity: p.quantity,
               price: p.price,
+              stockType: "local",
             })) || [],
-            totalPrice: order.total,
-            notes: order.notes,
-            orderRef: order.id,
-            deliveryType: "home",
+            deliveryType: deliveryType || "home",
+            amount: order.total,
           };
 
           const response = await zrExpressApi.post("/api/v1/parcels", parcelData);
@@ -477,10 +485,28 @@ app.put("/api/orders/:id/status", async (req, res) => {
                 } 
               }
             );
+          } else {
+            const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
+            const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
+            const orderIndex = orders.findIndex((o) => o.id === id);
+            if (orderIndex !== -1) {
+              orders[orderIndex].deliveryTrackingNumber = trackingNumber;
+              orders[orderIndex].deliveryStatus = "created";
+              orders[orderIndex].deliveryCreatedAt = new Date().toISOString();
+              fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
+            }
           }
         }
       } catch (deliveryError) {
-        console.error("Auto delivery creation failed:", deliveryError.message);
+        console.error("Auto delivery creation failed:", deliveryError.response?.data || deliveryError.message);
+        console.error("Order data for delivery:", JSON.stringify({
+          customerName: order?.customerName,
+          customerPhone: order?.customerPhone,
+          wilaya: order?.wilaya,
+          commune: order?.commune,
+          total: order?.total,
+          productsCount: order?.products?.length
+        }, null, 2));
       }
     }
 
@@ -538,19 +564,20 @@ app.post("/api/orders/:id/create-delivery", async (req, res) => {
         name: order.customerName,
         phone: order.customerPhone,
         phone2: order.customerPhone2,
+      },
+      deliveryAddress: {
         address: order.address,
         wilaya: order.wilaya,
         commune: order.commune,
       },
-      products: order.products?.map((p) => ({
+      orderedProducts: order.products?.map((p) => ({
         name: p.title,
         quantity: p.quantity,
         price: p.price,
+        stockType: "local",
       })) || [],
-      totalPrice: order.total,
-      notes: order.notes,
-      orderRef: order.id,
-      deliveryType: deliveryType,
+      deliveryType: deliveryType || "home",
+      amount: order.total,
     };
 
     const response = await zrExpressApi.post("/api/v1/parcels", parcelData);
@@ -610,6 +637,15 @@ app.get("/api/orders/:id/track-delivery", async (req, res) => {
           deliveryUpdatedAt: new Date().toISOString()
         }}
       );
+    } else if (!db && response.data.status !== order.deliveryStatus) {
+      const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
+      const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
+      const orderIndex = orders.findIndex((o) => o.id === id);
+      if (orderIndex !== -1) {
+        orders[orderIndex].deliveryStatus = response.data.status;
+        orders[orderIndex].deliveryUpdatedAt = new Date().toISOString();
+        fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
+      }
     }
 
     res.json(response.data);
@@ -649,6 +685,15 @@ app.delete("/api/orders/:id/cancel-delivery", async (req, res) => {
           deliveryCancelledAt: new Date().toISOString()
         }}
       );
+    } else {
+      const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
+      const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
+      const orderIndex = orders.findIndex((o) => o.id === id);
+      if (orderIndex !== -1) {
+        orders[orderIndex].deliveryStatus = "cancelled";
+        orders[orderIndex].deliveryCancelledAt = new Date().toISOString();
+        fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
+      }
     }
 
     res.json({ success: true });
