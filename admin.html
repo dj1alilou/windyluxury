@@ -178,6 +178,18 @@
         border: 1px solid #ffeeba;
       }
 
+      .status-created {
+        background-color: #d1fae5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+      }
+
+      .status-failed {
+        background-color: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+
       .status-processing {
         background-color: #cce5ff;
         color: #004085;
@@ -417,6 +429,15 @@
             >
               <i class="fas fa-shopping-cart"></i>
               <span id="navOrders">Commandes</span>
+            </a>
+
+            <a
+              href="#"
+              onclick="showSection('zrexpress')"
+              class="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/10 transition"
+            >
+              <i class="fas fa-truck-loading"></i>
+              <span id="navZrExpress">ZR Express</span>
             </a>
 
             <a
@@ -788,6 +809,113 @@
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <!-- ZR Express Section -->
+        <div id="zrexpressSection" style="display: none">
+          <div class="flex justify-between items-center mb-6">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-800">
+                Envoi ZR Express
+              </h2>
+              <p class="text-sm text-gray-500 mt-1">
+                Crée directement les colis ZR Express pour les commandes sélectionnées.
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                onclick="renderZrExpressOrders()"
+                class="btn btn-warning"
+                title="Rafraîchir la liste"
+              >
+                <i class="fas fa-sync-alt"></i> Rafraîchir
+              </button>
+              <button
+                onclick="dryRunSelectedZrExpressOrders()"
+                class="btn btn-warning"
+                id="dryRunZrExpressBtn"
+                disabled
+              >
+                <i class="fas fa-eye"></i> Vérifier payload
+              </button>
+              <button
+                onclick="sendSelectedZrExpressOrders()"
+                class="btn btn-primary"
+                id="sendZrExpressBtn"
+                disabled
+              >
+                <i class="fas fa-paper-plane"></i> Envoyer la sélection
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="stat-card">
+              <p class="text-sm text-gray-500">Commandes sans livraison</p>
+              <h3 class="text-2xl font-bold" id="zrPendingCount">0</h3>
+            </div>
+            <div class="stat-card">
+              <p class="text-sm text-gray-500">Commandes envoyées</p>
+              <h3 class="text-2xl font-bold" id="zrCreatedCount">0</h3>
+            </div>
+            <div class="stat-card">
+              <p class="text-sm text-gray-500">Échecs livraison</p>
+              <h3 class="text-2xl font-bold" id="zrFailedCount">0</h3>
+            </div>
+            <div class="stat-card">
+              <p class="text-sm text-gray-500">Mode</p>
+              <h3 class="text-2xl font-bold" id="zrAutoMode">-</h3>
+            </div>
+          </div>
+
+          <div class="table-container mb-6">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+              <div class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="selectAllZrOrders"
+                  onchange="toggleSelectAllZrOrders()"
+                />
+                <label for="selectAllZrOrders" class="font-bold"
+                  >Tout sélectionner</label
+                >
+              </div>
+              <p class="text-xs text-gray-500">
+                Les commandes déjà envoyées sont désactivées.
+              </p>
+            </div>
+            <div class="overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>N° commande</th>
+                    <th>Client</th>
+                    <th>Type</th>
+                    <th>Wilaya</th>
+                    <th>Total</th>
+                    <th>Statut livraison</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="zrexpressOrdersTable">
+                  <tr>
+                    <td colspan="8" class="text-center py-8">Chargement...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <div class="p-4 border-b">
+              <h3 class="text-lg font-bold text-gray-800">Journal d'envoi</h3>
+            </div>
+            <pre
+              id="zrexpressLog"
+              class="p-4 bg-gray-900 text-gray-100 min-h-40 overflow-auto text-sm"
+            ></pre>
           </div>
         </div>
 

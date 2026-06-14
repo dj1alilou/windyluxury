@@ -22,6 +22,7 @@ let products = [];
 let categories = [...defaultCategories];
 let orders = [];
 let settings = {};
+let zrexpressLog = [];
 let editingProductId = null;
 let editingCategoryId = null;
 
@@ -203,6 +204,7 @@ async function loadOrders() {
     const response = await fetch(`${CONFIG.API_BASE}/orders`);
     if (response.ok) {
       orders = await response.json();
+      renderZrExpressOrders();
     }
   } catch (error) {
     console.error("Error loading orders:", error);
@@ -428,12 +430,281 @@ function exportSelectedOrders() {
   window.open(exportUrl, "_blank");
 }
 
+function getZrExpressPendingOrders() {
+  return orders.filter(
+    (order) => order.status !== "cancelled" && !order.deliveryTrackingNumber,
+  );
+}
+
+function renderZrExpressOrders() {
+  const tbody = document.getElementById("zrexpressOrdersTable");
+  if (!tbody) return;
+
+  const pendingOrders = getZrExpressPendingOrders();
+  const createdCount = orders.filter((order) => order.deliveryTrackingNumber).length;
+  const failedCount = orders.filter(
+    (order) => order.deliveryStatus === "failed",
+  ).length;
+  const autoMode = "Auto";
+
+  document.getElementById("zrPendingCount").textContent = pendingOrders.length;
+  document.getElementById("zrCreatedCount").textContent = createdCount;
+  document.getElementById("zrFailedCount").textContent = failedCount;
+  document.getElementById("zrAutoMode").textContent = autoMode;
+
+  if (pendingOrders.length === 0) {
+    tbody.innerHTML =
+      '<tr><td colspan="8" class="text-center py-8">Aucune commande à envoyer</td></tr>';
+    updateZrExpressButtons();
+    return;
+  }
+
+  tbody.innerHTML = pendingOrders
+    .map(
+      (order) => `
+    <tr>
+      <td>
+        <input type="checkbox" class="zrexpress-order-checkbox" value="${order.id}" onchange="updateZrExpressButtons()" />
+      </td>
+      <td>${order.id?.slice(-6) || "N/A"}</td>
+      <td>${order.customerName || "عميل"}</td>
+      <td>${getDeliveryTypeText(order.deliveryType)}</td>
+      <td>${order.wilaya || "-"}</td>
+      <td>${(order.total || 0).toLocaleString()} DA</td>
+      <td><span class="status-badge status-${order.deliveryStatus || "pending"}">${getDeliveryStatusText(order.deliveryStatus)}</span></td>
+      <td>
+        <button onclick="dryRunZrExpressOrder('${order.id}')" class="btn btn-warning" style="padding: 4px 8px; font-size: 12px;">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button onclick="sendZrExpressOrder('${order.id}')" class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </td>
+    </tr>
+  `,
+    )
+    .join("");
+
+  updateZrExpressButtons();
+}
+
+function toggleSelectAllZrOrders() {
+  const selectAllCheckbox = document.getElementById("selectAllZrOrders");
+  const checkboxes = document.querySelectorAll(".zrexpress-order-checkbox");
+  checkboxes.forEach((cb) => (cb.checked = selectAllCheckbox.checked));
+  updateZrExpressButtons();
+}
+
+function updateZrExpressButtons() {
+  const checkboxes = document.querySelectorAll(".zrexpress-order-checkbox:checked");
+  const sendBtn = document.getElementById("sendZrExpressBtn");
+  const dryRunBtn = document.getElementById("dryRunZrExpressBtn");
+
+  if (sendBtn) sendBtn.disabled = checkboxes.length === 0;
+  if (dryRunBtn) dryRunBtn.disabled = checkboxes.length === 0;
+}
+
+function getSelectedZrExpressOrders() {
+  const checkboxes = document.querySelectorAll(".zrexpress-order-checkbox:checked");
+  const orderIds = Array.from(checkboxes).map((cb) => cb.value);
+  return orderIds
+    .map((orderId) => orders.find((order) => order.id === orderId))
+    .filter(Boolean);
+}
+
+function addZrExpressLog(message, type = "info") {
+  const time = new Date().toLocaleTimeString("fr-FR");
+  zrexpressLog.unshift(`[${time}] ${type.toUpperCase()}: ${message}`);
+  zrexpressLog = zrexpressLog.slice(0, 80);
+
+  const log = document.getElementById("zrexpressLog");
+  if (log) log.textContent = zrexpressLog.join("\n");
+}
+
+function getDeliveryTypeText(deliveryType) {
+  if (deliveryType === "office") return "Bureau";
+  if (deliveryType === "pickup-point") return "Point relais";
+  if (deliveryType === "home") return "Domicile";
+  return "-";
+}
+
+function getDeliveryStatusText(status) {
+  if (!status) return "Non créée";
+  if (status === "created") return "Créée";
+  if (status === "failed") return "Échec";
+  if (status === "cancelled") return "Annulée";
+  return status;
+}
+
+function getZrExpressErrorText(errorText) {
+  try {
+    const parsed = JSON.parse(errorText);
+    return parsed.error || parsed.message || errorText;
+  } catch (error) {
+    return errorText || "Erreur inconnue";
+  }
+}
+
+async function sendZrExpressOrder(orderId) {
+  const order = orders.find((item) => item.id === orderId);
+  if (!order) return;
+
+  if (!confirm(`Envoyer la commande ${order.id?.slice(-6)} à ZR Express ?`)) {
+    return;
+  }
+
+  await sendZrExpressOrders([order]);
+}
+
+async function dryRunZrExpressOrder(orderId) {
+  const order = orders.find((item) => item.id === orderId);
+  if (!order) return;
+
+  await dryRunZrExpressOrders([order]);
+}
+
+async function sendSelectedZrExpressOrders() {
+  const selectedOrders = getSelectedZrExpressOrders();
+
+  if (selectedOrders.length === 0) {
+    alert("Veuillez sélectionner au moins une commande");
+    return;
+  }
+
+  if (
+    !confirm(
+      `Vous allez créer ${selectedOrders.length} colis ZR Express. Continuer ?`,
+    )
+  ) {
+    return;
+  }
+
+  await sendZrExpressOrders(selectedOrders);
+}
+
+async function dryRunSelectedZrExpressOrders() {
+  const selectedOrders = getSelectedZrExpressOrders();
+
+  if (selectedOrders.length === 0) {
+    alert("Veuillez sélectionner au moins une commande");
+    return;
+  }
+
+  await dryRunZrExpressOrders(selectedOrders);
+}
+
+async function sendZrExpressOrders(selectedOrders) {
+  const sendBtn = document.getElementById("sendZrExpressBtn");
+  const dryRunBtn = document.getElementById("dryRunZrExpressBtn");
+  if (sendBtn) sendBtn.disabled = true;
+  if (dryRunBtn) dryRunBtn.disabled = true;
+
+  for (const order of selectedOrders) {
+    if (!order.deliveryTrackingNumber) {
+      addZrExpressLog(`Envoi commande ${order.id?.slice(-6)}...`, "info");
+
+      try {
+        const response = await fetch(
+          `${CONFIG.API_BASE}/orders/${order.id}/create-delivery`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              deliveryType: order.deliveryType || "home",
+            }),
+          },
+        );
+
+        if (response.ok) {
+          const result = await response.json();
+          addZrExpressLog(
+            `Commande ${order.id?.slice(-6)} envoyée: ${result.trackingNumber || "ok"}`,
+            "success",
+          );
+        } else {
+          const errorText = await response.text();
+          addZrExpressLog(
+            `Commande ${order.id?.slice(-6)} échec: ${getZrExpressErrorText(errorText)}`,
+            "error",
+          );
+        }
+      } catch (error) {
+        addZrExpressLog(
+          `Commande ${order.id?.slice(-6)} erreur réseau: ${error.message}`,
+          "error",
+        );
+      }
+    }
+  }
+
+  await loadOrders();
+  renderZrExpressOrders();
+  if (sendBtn) sendBtn.disabled = false;
+  if (dryRunBtn) dryRunBtn.disabled = false;
+}
+
+async function dryRunZrExpressOrders(selectedOrders) {
+  const sendBtn = document.getElementById("sendZrExpressBtn");
+  const dryRunBtn = document.getElementById("dryRunZrExpressBtn");
+  if (sendBtn) sendBtn.disabled = true;
+  if (dryRunBtn) dryRunBtn.disabled = true;
+
+  for (const order of selectedOrders) {
+    if (order.deliveryTrackingNumber) {
+      addZrExpressLog(
+        `Commande ${order.id?.slice(-6)} déjà envoyée, vérification ignorée`,
+        "info",
+      );
+      continue;
+    }
+
+    addZrExpressLog(`Vérification commande ${order.id?.slice(-6)}...`, "info");
+
+    try {
+      const response = await fetch(
+        `${CONFIG.API_BASE}/orders/${order.id}/create-delivery`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            deliveryType: order.deliveryType || "home",
+            dryRun: true,
+          }),
+        },
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        addZrExpressLog(
+          `Commande ${order.id?.slice(-6)} payload valide: ${result.parcelData?.deliveryType}`,
+          "success",
+        );
+      } else {
+        const errorText = await response.text();
+        addZrExpressLog(
+          `Commande ${order.id?.slice(-6)} payload invalide: ${getZrExpressErrorText(errorText)}`,
+          "error",
+        );
+      }
+    } catch (error) {
+      addZrExpressLog(
+        `Commande ${order.id?.slice(-6)} erreur réseau: ${error.message}`,
+        "error",
+      );
+    }
+  }
+
+  if (sendBtn) sendBtn.disabled = false;
+  if (dryRunBtn) dryRunBtn.disabled = false;
+}
+
 // Show Section
 function showSection(sectionId) {
   // Hide all sections
   document.getElementById("dashboardSection").style.display = "none";
   document.getElementById("productsSection").style.display = "none";
   document.getElementById("ordersSection").style.display = "none";
+  document.getElementById("zrexpressSection").style.display = "none";
   document.getElementById("categoriesSection").style.display = "none";
   document.getElementById("customersSection").style.display = "none";
   document.getElementById("settingsSection").style.display = "none";
@@ -446,6 +717,7 @@ function showSection(sectionId) {
     dashboard: "Tableau de bord",
     products: "Gestion des produits",
     orders: "Gestion des commandes",
+    zrexpress: "Envoi ZR Express",
     categories: "Gestion des catégories",
     customers: "Gestion des clients",
     settings: "Paramètres",
@@ -456,6 +728,8 @@ function showSection(sectionId) {
   // Load section data
   if (sectionId === "orders") {
     renderOrdersTable(orders);
+  } else if (sectionId === "zrexpress") {
+    renderZrExpressOrders();
   } else if (sectionId === "settings") {
     loadSettings();
   }
@@ -780,6 +1054,23 @@ function viewOrder(orderId) {
           <p class="text-sm text-gray-600">Frais de livraison:</p>
           <p class="font-bold">${(order.deliveryPrice || 0).toLocaleString()} DA</p>
         </div>
+        <div>
+          <p class="text-sm text-gray-600">Suivi livraison:</p>
+          <p class="font-bold">${order.deliveryTrackingNumber || "Non créé"}</p>
+          <p class="text-xs text-gray-500">${order.deliveryStatus ? `Statut: ${order.deliveryStatus}` : ""}</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <button onclick="createDeliveryForOrder('${order.id}', '${order.deliveryType || "home"}')" class="btn btn-primary" style="padding: 6px 8px;">
+          <i class="fas fa-truck"></i> Créer livraison
+        </button>
+        <button onclick="trackDeliveryForOrder('${order.id}')" class="btn btn-warning" style="padding: 6px 8px;" ${order.deliveryTrackingNumber ? "" : "disabled"}>
+          <i class="fas fa-search-location"></i> Suivre
+        </button>
+        <button onclick="cancelDeliveryForOrder('${order.id}')" class="btn btn-danger" style="padding: 6px 8px;" ${order.deliveryTrackingNumber ? "" : "disabled"}>
+          <i class="fas fa-times"></i> Annuler
+        </button>
       </div>
 
       <div>
@@ -811,7 +1102,7 @@ function viewOrder(orderId) {
 // Update Order Status
 async function updateOrderStatus(orderId, status) {
   try {
-    const response = await fetch(`${CONFIG.API_BASE}/orders/${orderId}`, {
+    const response = await fetch(`${CONFIG.API_BASE}/orders/${orderId}/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -823,6 +1114,80 @@ async function updateOrderStatus(orderId, status) {
     }
   } catch (error) {
     console.error("Error updating order status:", error);
+  }
+}
+
+async function createDeliveryForOrder(orderId, deliveryType) {
+  try {
+    const response = await fetch(
+      `${CONFIG.API_BASE}/orders/${orderId}/create-delivery`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deliveryType }),
+      },
+    );
+
+    if (response.ok) {
+      await loadOrders();
+      updateDashboard();
+      alert("Livraison créée avec succès");
+      return;
+    }
+
+    const errorText = await response.text();
+    alert(`Erreur lors de la création de la livraison: ${errorText}`);
+  } catch (error) {
+    console.error("Error creating delivery:", error);
+    alert("Erreur lors de la création de la livraison");
+  }
+}
+
+async function trackDeliveryForOrder(orderId) {
+  try {
+    const response = await fetch(
+      `${CONFIG.API_BASE}/orders/${orderId}/track-delivery`,
+    );
+
+    if (response.ok) {
+      const tracking = await response.json();
+      alert(`Statut livraison: ${tracking.status || "Inconnu"}`);
+      await loadOrders();
+      updateDashboard();
+      return;
+    }
+
+    const errorText = await response.text();
+    alert(`Erreur lors du suivi: ${errorText}`);
+  } catch (error) {
+    console.error("Error tracking delivery:", error);
+    alert("Erreur lors du suivi de la livraison");
+  }
+}
+
+async function cancelDeliveryForOrder(orderId) {
+  if (!confirm("Voulez-vous vraiment annuler cette livraison ?")) return;
+
+  try {
+    const response = await fetch(
+      `${CONFIG.API_BASE}/orders/${orderId}/cancel-delivery`,
+      {
+        method: "DELETE",
+      },
+    );
+
+    if (response.ok) {
+      await loadOrders();
+      updateDashboard();
+      alert("Livraison annulée");
+      return;
+    }
+
+    const errorText = await response.text();
+    alert(`Erreur lors de l'annulation: ${errorText}`);
+  } catch (error) {
+    console.error("Error cancelling delivery:", error);
+    alert("Erreur lors de l'annulation de la livraison");
   }
 }
 
@@ -1039,6 +1404,15 @@ window.editProduct = editProduct;
 window.deleteProduct = deleteProduct;
 window.viewOrder = viewOrder;
 window.updateOrderStatus = updateOrderStatus;
+window.createDeliveryForOrder = createDeliveryForOrder;
+window.sendZrExpressOrder = sendZrExpressOrder;
+window.sendSelectedZrExpressOrders = sendSelectedZrExpressOrders;
+window.dryRunZrExpressOrder = dryRunZrExpressOrder;
+window.dryRunSelectedZrExpressOrders = dryRunSelectedZrExpressOrders;
+window.renderZrExpressOrders = renderZrExpressOrders;
+window.toggleSelectAllZrOrders = toggleSelectAllZrOrders;
+window.trackDeliveryForOrder = trackDeliveryForOrder;
+window.cancelDeliveryForOrder = cancelDeliveryForOrder;
 window.showAddCategoryModal = showAddCategoryModal;
 window.closeModal = closeModal;
 window.refreshProducts = refreshProducts;

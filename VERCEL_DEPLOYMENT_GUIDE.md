@@ -131,6 +131,10 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWr
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
+ZR_EXPRESS_API_KEY=your_zrexpress_api_key
+ZR_EXPRESS_TENANT_ID=your_zrexpress_tenant_id
+ZR_EXPRESS_DEFAULT_HUB_ID=your_zrexpress_pickup_hub_id
+ZR_EXPRESS_AUTO_CREATE_OFFICE=true
 ```
 
 ### 4.4 Run Locally
@@ -197,6 +201,10 @@ After importing your repository, you'll see the Configure Project screen. Scroll
 | CLOUDINARY_CLOUD_NAME | Your Cloudinary cloud name           | Production, Preview, Development |
 | CLOUDINARY_API_KEY    | Your Cloudinary API key              | Production, Preview, Development |
 | CLOUDINARY_API_SECRET | Your Cloudinary API secret           | Production, Preview, Development |
+| ZR_EXPRESS_API_KEY    | Your ZR Express API key              | Production, Preview, Development |
+| ZR_EXPRESS_TENANT_ID  | Your ZR Express tenant ID            | Production, Preview, Development |
+| ZR_EXPRESS_DEFAULT_HUB_ID | Your ZR Express pickup hub ID for office delivery | Production, Preview, Development |
+| ZR_EXPRESS_AUTO_CREATE_OFFICE | Set to `true` to auto-create office deliveries on order creation | Production, Preview, Development |
 
 ### 5.4 Deploy
 

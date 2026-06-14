@@ -42,6 +42,14 @@ app.get("/api/orders/export/zrexpress", async (req, res) => {
       const productNames = order.products?.map((p) => p.title).join(", ") || "";
       const quantities =
         order.products?.map((p) => p.quantity).join(", ") || "";
+      const isOfficeDelivery =
+        order.deliveryType === "office" || order.deliveryType === "pickup-point";
+      const officeName = order.officeName || order.office || order.deliveryOffice || "";
+      const officeAddress =
+        order.officeAddress ||
+        officeName ||
+        order.address ||
+        [order.commune, order.wilaya].filter(Boolean).join(", ");
 
       return [
         order.customerName || "",
@@ -51,14 +59,14 @@ app.get("/api/orders/export/zrexpress", async (req, res) => {
         quantities,
         firstProduct.id || "",
         "",
-        order.address || "",
+        isOfficeDelivery ? officeAddress : order.address || "",
         order.wilaya || "",
         order.commune || "",
         order.total?.toString() || "0",
         order.notes || "",
         order.id || "",
-        "",
-        "",
+        isOfficeDelivery ? "1" : "",
+        isOfficeDelivery ? officeName : "",
       ];
     });
 

@@ -8,7 +8,18 @@ const { MongoClient } = require("mongodb");
 const cloudinary = require("cloudinary").v2;
 const sharp = require("sharp");
 const ExcelJS = require("exceljs");
-const axios = require("axios");
+const {
+  buildParcelData,
+  cancelDelivery,
+  createDeliveryWhenReady,
+  createOfficeDeliveryIfNeeded,
+  createParcel,
+  findOrder: findStoredOrder,
+  getDeliveryRates,
+  getDeliveryWilayas,
+  saveDeliveryError,
+  trackDelivery,
+} = require("./lib/zrExpress");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -31,28 +42,15 @@ const upload = multer({ storage });
 
 // MongoDB Connection
 let db = null;
-const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  "mongodb+srv://windyluxury:hadil2026dj@windyluxuryoff.98vdhye.mongodb.net/windyluxury?retryWrites=true&w=majority";
-
-const ZR_EXPRESS_API_KEY = process.env.ZR_EXPRESS_API_KEY || "JXhCtXOUsnnLH1s36aDCWDwLYEQAdam6Ki1XCEutwRKLUKLRFMsLsDTpBfZyrTqk";
-const ZR_EXPRESS_TENANT_ID = process.env.ZR_EXPRESS_TENANT_ID || "651609a6-a352-4d77-a49e-813e85db9af9";
-const ZR_EXPRESS_BASE_URL = "https://api.zrexpress.app";
-
-const zrExpressApi = axios.create({
-  baseURL: ZR_EXPRESS_BASE_URL,
-  headers: {
-    "X-Tenant": ZR_EXPRESS_TENANT_ID,
-    "X-Api-Key": ZR_EXPRESS_API_KEY,
-    "Content-Type": "application/json",
-  },
-});
-
-// Direct connection fallback (for networks that block SRV lookups)
-const DIRECT_MONGODB_URI =
-  "mongodb://windyluxury:hadil2026dj@ac-8loszcd-shard-00-00.98vdhye.mongodb.net:27017,ac-8loszcd-shard-00-01.98vdhye.mongodb.net:27017,ac-8loszcd-shard-00-02.98vdhye.mongodb.net:27017/windyluxury?ssl=true&authSource=admin&retryWrites=true";
+const MONGODB_URI = process.env.MONGODB_URI || "";
+const DIRECT_MONGODB_URI = process.env.DIRECT_MONGODB_URI || "";
 
 async function connectDB() {
+  if (!MONGODB_URI) {
+    console.log("📁 No MongoDB URI configured; falling back to file-based storage");
+    return false;
+  }
+
   // Try SRV connection first
   try {
     const client = new MongoClient(MONGODB_URI, {
@@ -67,6 +65,11 @@ async function connectDB() {
     console.log("⚠️ SRV connection failed:", err.message);
 
     // Try direct connection as fallback
+    if (!DIRECT_MONGODB_URI) {
+      console.log("📁 No direct MongoDB URI configured; falling back to file-based storage");
+      return false;
+    }
+
     try {
       console.log("🔄 Trying direct connection...");
       const client = new MongoClient(DIRECT_MONGODB_URI, {
@@ -141,6 +144,25 @@ async function deleteFromCloudinary(publicId) {
     console.error("Error deleting from Cloudinary:", error);
   }
 }
+
+const deliveryStorage = {
+  updateOrder: async (orderId, fields) => {
+    if (db) {
+      await db.collection("orders").updateOne({ id: orderId }, { $set: fields });
+    } else {
+      const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
+      const orders = fs.existsSync(ORDERS_FILE)
+        ? JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"))
+        : [];
+      const orderIndex = orders.findIndex((order) => order.id === orderId);
+      if (orderIndex !== -1) {
+        orders[orderIndex] = { ...orders[orderIndex], ...fields };
+        fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
+      }
+    }
+  },
+  findOrder: findStoredOrder,
+};
 
 // Default categories
 function defaultCategories() {
@@ -413,6 +435,17 @@ app.post("/api/orders", async (req, res) => {
       fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
     }
 
+    const autoDelivery = await createOfficeDeliveryIfNeeded(order, deliveryStorage);
+    if (autoDelivery && !autoDelivery.success) {
+      order.deliveryStatus = "failed";
+      order.deliveryError = autoDelivery.error;
+    } else if (autoDelivery?.success) {
+      order.deliveryTrackingNumber = autoDelivery.delivery.trackingNumber;
+      order.deliveryStatus = "created";
+      order.deliveryCreatedAt = new Date().toISOString();
+      order.deliveryApiResponse = autoDelivery.delivery.response;
+    }
+
     console.log("Order saved successfully:", order.id);
     res.status(201).json(order);
   } catch (error) {
@@ -435,82 +468,23 @@ app.put("/api/orders/:id/status", async (req, res) => {
         );
     }
 
-    // Auto-create delivery parcel when order is confirmed/processing
     if (status === "confirmed" || status === "processing") {
-      try {
-        let order = null;
-        if (db) {
-          order = await db.collection("orders").findOne({ id });
-        } else {
-          const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
-          if (fs.existsSync(ORDERS_FILE)) {
-            const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
-            order = orders.find((o) => o.id === id);
-          }
-        }
-        
-        if (order && !order.deliveryTrackingNumber) {
-          const parcelData = {
-            customer: {
-              name: order.customerName,
-              phone: order.customerPhone,
-              phone2: order.customerPhone2,
-            },
-            deliveryAddress: {
-              address: order.address,
-              wilaya: order.wilaya,
-              commune: order.commune,
-            },
-            orderedProducts: order.products?.map((p) => ({
-              name: p.title,
-              quantity: p.quantity,
-              price: p.price,
-              stockType: "local",
-            })) || [],
-            deliveryType: deliveryType || "home",
-            amount: order.total,
-          };
+      const order = await findStoredOrder(id);
 
-          const response = await zrExpressApi.post("/api/v1/parcels", parcelData);
-          const trackingNumber = response.data.trackingNumber;
+      if (order && !order.deliveryTrackingNumber) {
+        const deliveryResult = await createDeliveryWhenReady(
+          order,
+          deliveryStorage,
+          order.deliveryType || "home",
+        );
 
-          if (db) {
-            await db.collection("orders").updateOne(
-              { id },
-              { 
-                $set: { 
-                  deliveryTrackingNumber: trackingNumber,
-                  deliveryStatus: "created",
-                  deliveryCreatedAt: new Date().toISOString()
-                } 
-              }
-            );
-          } else {
-            const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
-            const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
-            const orderIndex = orders.findIndex((o) => o.id === id);
-            if (orderIndex !== -1) {
-              orders[orderIndex].deliveryTrackingNumber = trackingNumber;
-              orders[orderIndex].deliveryStatus = "created";
-              orders[orderIndex].deliveryCreatedAt = new Date().toISOString();
-              fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
-            }
-          }
+        if (deliveryResult?.success) {
+          res.locals.delivery = deliveryResult.delivery;
         }
-      } catch (deliveryError) {
-        console.error("Auto delivery creation failed:", deliveryError.response?.data || deliveryError.message);
-        console.error("Order data for delivery:", JSON.stringify({
-          customerName: order?.customerName,
-          customerPhone: order?.customerPhone,
-          wilaya: order?.wilaya,
-          commune: order?.commune,
-          total: order?.total,
-          productsCount: order?.products?.length
-        }, null, 2));
       }
-    }
 
-    res.json({ success: true });
+      res.json({ success: true, delivery: res.locals.delivery || null });
+    }
   } catch (error) {
     console.error("Error updating order status:", error);
     res.status(500).json({ error: error.message });
@@ -519,202 +493,113 @@ app.put("/api/orders/:id/status", async (req, res) => {
 
 // ============== ZR EXPRESS DELIVERY API ==============
 
-// Get ZR Express territories (wilayas)
 app.get("/api/delivery/wilayas", async (req, res) => {
   try {
-    const response = await zrExpressApi.get("/api/v1/delivery-pricing/rates");
-    res.json(response.data);
+    res.json(await getDeliveryWilayas());
   } catch (error) {
     console.error("Error fetching wilayas:", error.response?.data || error.message);
     res.status(500).json({ error: "Failed to fetch delivery zones" });
   }
 });
 
-// Create delivery parcel for an order
 app.post("/api/orders/:id/create-delivery", async (req, res) => {
   try {
     const { id } = req.params;
-    const { deliveryType = "home" } = req.body;
-
-    let order = null;
-    if (db) {
-      order = await db.collection("orders").findOne({ id });
-    } else {
-      const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
-      if (fs.existsSync(ORDERS_FILE)) {
-        const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
-        order = orders.find((o) => o.id === id);
-      }
-    }
+    const { deliveryType, dryRun } = req.body;
+    const order = await findStoredOrder(id);
 
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    if (order.deliveryTrackingNumber) {
-      return res.json({ 
-        success: true, 
-        message: "Delivery already created",
-        trackingNumber: order.deliveryTrackingNumber 
+    if (dryRun) {
+      return res.json({
+        success: true,
+        dryRun: true,
+        parcelData: buildParcelData(
+          order,
+          deliveryType || order.deliveryType || "home",
+        ),
       });
     }
 
-    const parcelData = {
-      customer: {
-        name: order.customerName,
-        phone: order.customerPhone,
-        phone2: order.customerPhone2,
-      },
-      deliveryAddress: {
-        address: order.address,
-        wilaya: order.wilaya,
-        commune: order.commune,
-      },
-      orderedProducts: order.products?.map((p) => ({
-        name: p.title,
-        quantity: p.quantity,
-        price: p.price,
-        stockType: "local",
-      })) || [],
-      deliveryType: deliveryType || "home",
-      amount: order.total,
-    };
-
-    const response = await zrExpressApi.post("/api/v1/parcels", parcelData);
-    const trackingNumber = response.data.trackingNumber;
-
-    if (db) {
-      await db.collection("orders").updateOne(
-        { id },
-        { 
-          $set: { 
-            deliveryTrackingNumber: trackingNumber,
-            deliveryStatus: "created",
-            deliveryCreatedAt: new Date().toISOString()
-          } 
-        }
-      );
+    if (order.deliveryTrackingNumber) {
+      return res.json({
+        success: true,
+        message: "Delivery already created",
+        trackingNumber: order.deliveryTrackingNumber,
+      });
     }
 
-    res.json({ 
-      success: true, 
-      trackingNumber,
-      parcelData: response.data 
+    const deliveryResult = await createDeliveryWhenReady(
+      order,
+      deliveryStorage,
+      deliveryType || order.deliveryType || "home",
+    );
+
+    if (!deliveryResult?.success) {
+      return res.status(500).json({
+        error: deliveryResult?.error || "Failed to create delivery parcel",
+      });
+    }
+
+    res.json({
+      success: true,
+      trackingNumber: deliveryResult.delivery.trackingNumber,
+      parcelData: deliveryResult.delivery.parcelData,
+      response: deliveryResult.delivery.response,
     });
   } catch (error) {
-    console.error("Error creating delivery:", error.response?.data || error.message);
-    res.status(500).json({ error: error.response?.data?.message || "Failed to create delivery parcel" });
+    console.error(
+      "Error creating delivery:",
+      error.response?.data || error.message,
+    );
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Track delivery status
 app.get("/api/orders/:id/track-delivery", async (req, res) => {
   try {
     const { id } = req.params;
-
-    let order = null;
-    if (db) {
-      order = await db.collection("orders").findOne({ id });
-    } else {
-      const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
-      if (fs.existsSync(ORDERS_FILE)) {
-        const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
-        order = orders.find((o) => o.id === id);
-      }
-    }
+    const order = await findStoredOrder(id);
 
     if (!order?.deliveryTrackingNumber) {
-      return res.status(404).json({ error: "No delivery parcel found for this order" });
+      return res
+        .status(404)
+        .json({ error: "No delivery parcel found for this order" });
     }
 
-    const response = await zrExpressApi.get(`/api/v1/parcels/${order.deliveryTrackingNumber}`);
-    
-    if (db && response.data.status !== order.deliveryStatus) {
-      await db.collection("orders").updateOne(
-        { id },
-        { $set: { 
-          deliveryStatus: response.data.status,
-          deliveryUpdatedAt: new Date().toISOString()
-        }}
-      );
-    } else if (!db && response.data.status !== order.deliveryStatus) {
-      const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
-      const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
-      const orderIndex = orders.findIndex((o) => o.id === id);
-      if (orderIndex !== -1) {
-        orders[orderIndex].deliveryStatus = response.data.status;
-        orders[orderIndex].deliveryUpdatedAt = new Date().toISOString();
-        fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
-      }
-    }
-
-    res.json(response.data);
+    res.json(await trackDelivery(order, deliveryStorage));
   } catch (error) {
     console.error("Error tracking delivery:", error.response?.data || error.message);
     res.status(500).json({ error: "Failed to track delivery" });
   }
 });
 
-// Cancel delivery parcel
 app.delete("/api/orders/:id/cancel-delivery", async (req, res) => {
   try {
     const { id } = req.params;
-
-    let order = null;
-    if (db) {
-      order = await db.collection("orders").findOne({ id });
-    } else {
-      const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
-      if (fs.existsSync(ORDERS_FILE)) {
-        const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
-        order = orders.find((o) => o.id === id);
-      }
-    }
+    const order = await findStoredOrder(id);
 
     if (!order?.deliveryTrackingNumber) {
-      return res.status(404).json({ error: "No delivery parcel found for this order" });
+      return res
+        .status(404)
+        .json({ error: "No delivery parcel found for this order" });
     }
 
-    await zrExpressApi.delete(`/api/v1/parcels/${order.deliveryTrackingNumber}`);
-
-    if (db) {
-      await db.collection("orders").updateOne(
-        { id },
-        { $set: { 
-          deliveryStatus: "cancelled",
-          deliveryCancelledAt: new Date().toISOString()
-        }}
-      );
-    } else {
-      const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
-      const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
-      const orderIndex = orders.findIndex((o) => o.id === id);
-      if (orderIndex !== -1) {
-        orders[orderIndex].deliveryStatus = "cancelled";
-        orders[orderIndex].deliveryCancelledAt = new Date().toISOString();
-        fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
-      }
-    }
-
-    res.json({ success: true });
+    res.json(await cancelDelivery(order, deliveryStorage));
   } catch (error) {
     console.error("Error cancelling delivery:", error.response?.data || error.message);
     res.status(500).json({ error: "Failed to cancel delivery parcel" });
   }
 });
 
-// Get delivery rates by wilaya
 app.post("/api/delivery/rates", async (req, res) => {
   try {
-    const { wilayaId, products } = req.body;
-    const response = await zrExpressApi.get("/api/v1/delivery-pricing/rates");
-    const rates = response.data;
-    
-    const wilayaRate = rates.find(r => r.wilayaId === wilayaId || r.wilayaName?.toLowerCase() === wilayaId?.toLowerCase());
-    
+    const { wilayaId } = req.body;
     res.json({
       success: true,
-      rates: wilayaRate || rates
+      rates: await getDeliveryRates(wilayaId),
     });
   } catch (error) {
     console.error("Error fetching rates:", error.response?.data || error.message);
@@ -983,6 +868,14 @@ app.get("/api/orders/export/zrexpress", async (req, res) => {
       const quantities =
         order.products?.map((p) => p.quantity).join(", ") || "";
       const firstProduct = order.products?.[0] || {};
+      const isOfficeDelivery =
+        order.deliveryType === "office" || order.deliveryType === "pickup-point";
+      const officeName = order.officeName || order.office || order.deliveryOffice || "";
+      const officeAddress =
+        order.officeAddress ||
+        officeName ||
+        order.address ||
+        [order.commune, order.wilaya].filter(Boolean).join(", ");
 
       worksheet.addRow([
         order.customerName || "",
@@ -992,14 +885,14 @@ app.get("/api/orders/export/zrexpress", async (req, res) => {
         quantities,
         firstProduct.id || "",
         "",
-        order.address || "",
+        isOfficeDelivery ? officeAddress : order.address || "",
         order.wilaya || "",
         order.commune || "",
         order.total?.toString() || "0",
         order.notes || "",
         order.id || "",
-        "",
-        "",
+        isOfficeDelivery ? "1" : "",
+        isOfficeDelivery ? officeName : "",
       ]);
     });
 

@@ -4,6 +4,16 @@ const path = require("path");
 const { MongoClient } = require("mongodb");
 const cloudinary = require("cloudinary").v2;
 const sharp = require("sharp");
+const {
+  buildParcelData,
+  cancelDelivery,
+  createDeliveryWhenReady,
+  createOfficeDeliveryIfNeeded,
+  findOrder: findStoredOrder,
+  getDeliveryRates,
+  getDeliveryWilayas,
+  trackDelivery,
+} = require("../lib/zrExpress");
 const { upload } = require("./multer-config");
 
 // Configure Cloudinary
@@ -101,6 +111,15 @@ async function deleteFromCloudinary(publicId) {
     console.error("Cloudinary delete error:", error);
   }
 }
+
+const deliveryStorage = {
+  updateOrder: async (orderId, fields) => {
+    const database = await connectDB();
+    if (!database) return;
+    await database.collection("orders").updateOne({ id: orderId }, { $set: fields });
+  },
+  findOrder: findStoredOrder,
+};
 
 function defaultCategories() {
   return [
@@ -457,6 +476,17 @@ module.exports = async (req, res) => {
         await database.collection("orders").insertOne(order);
       }
 
+      const autoDelivery = await createOfficeDeliveryIfNeeded(order, deliveryStorage);
+      if (autoDelivery && !autoDelivery.success) {
+        order.deliveryStatus = "failed";
+        order.deliveryError = autoDelivery.error;
+      } else if (autoDelivery?.success) {
+        order.deliveryTrackingNumber = autoDelivery.delivery.trackingNumber;
+        order.deliveryStatus = "created";
+        order.deliveryCreatedAt = new Date().toISOString();
+        order.deliveryApiResponse = autoDelivery.delivery.response;
+      }
+
       return res.status(201).json(order);
     }
 
@@ -478,7 +508,164 @@ module.exports = async (req, res) => {
         );
       }
 
+      if (body.status === "confirmed" || body.status === "processing") {
+        const order = await findStoredOrder(id);
+
+        if (order && !order.deliveryTrackingNumber) {
+          const deliveryResult = await createDeliveryWhenReady(
+            order,
+            deliveryStorage,
+            order.deliveryType || "home",
+          );
+
+          if (deliveryResult?.success) {
+            return res.json({ success: true, delivery: deliveryResult.delivery });
+          }
+        }
+      }
+
       return res.json({ success: true });
+    }
+
+    // GET /api/delivery/wilayas
+    if (pathname === "/api/delivery/wilayas" && method === "GET") {
+      try {
+        return res.json(await getDeliveryWilayas());
+      } catch (error) {
+        console.error(
+          "Error fetching delivery wilayas:",
+          error.response?.data || error.message,
+        );
+        return res.status(500).json({ error: "Failed to fetch delivery zones" });
+      }
+    }
+
+    // POST /api/orders/:id/create-delivery
+    if (
+      pathname.match(/^\/api\/orders\/.+\/create-delivery$/) &&
+      method === "POST"
+    ) {
+      const id = pathname.split("/")[3];
+      const body = parseBody(req.body);
+      const order = await findStoredOrder(id);
+
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      if (body.dryRun) {
+        return res.json({
+          success: true,
+          dryRun: true,
+          parcelData: buildParcelData(
+            order,
+            body.deliveryType || order.deliveryType || "home",
+          ),
+        });
+      }
+
+      if (order.deliveryTrackingNumber) {
+        return res.json({
+          success: true,
+          message: "Delivery already created",
+          trackingNumber: order.deliveryTrackingNumber,
+        });
+      }
+
+      try {
+        const deliveryResult = await createDeliveryWhenReady(
+          order,
+          deliveryStorage,
+          body.deliveryType || order.deliveryType || "home",
+        );
+
+        if (!deliveryResult?.success) {
+          return res.status(500).json({
+            error: deliveryResult?.error || "Failed to create delivery parcel",
+          });
+        }
+
+        return res.json({
+          success: true,
+          trackingNumber: deliveryResult.delivery.trackingNumber,
+          parcelData: deliveryResult.delivery.parcelData,
+          response: deliveryResult.delivery.response,
+        });
+      } catch (error) {
+        console.error(
+          "Error creating delivery:",
+          error.response?.data || error.message,
+        );
+        return res.status(500).json({ error: error.message });
+      }
+    }
+
+    // GET /api/orders/:id/track-delivery
+    if (
+      pathname.match(/^\/api\/orders\/.+\/track-delivery$/) &&
+      method === "GET"
+    ) {
+      const id = pathname.split("/")[3];
+      const order = await findStoredOrder(id);
+
+      if (!order?.deliveryTrackingNumber) {
+        return res
+          .status(404)
+          .json({ error: "No delivery parcel found for this order" });
+      }
+
+      try {
+        return res.json(await trackDelivery(order, deliveryStorage));
+      } catch (error) {
+        console.error(
+          "Error tracking delivery:",
+          error.response?.data || error.message,
+        );
+        return res.status(500).json({ error: "Failed to track delivery" });
+      }
+    }
+
+    // DELETE /api/orders/:id/cancel-delivery
+    if (
+      pathname.match(/^\/api\/orders\/.+\/cancel-delivery$/) &&
+      method === "DELETE"
+    ) {
+      const id = pathname.split("/")[3];
+      const order = await findStoredOrder(id);
+
+      if (!order?.deliveryTrackingNumber) {
+        return res
+          .status(404)
+          .json({ error: "No delivery parcel found for this order" });
+      }
+
+      try {
+        return res.json(await cancelDelivery(order, deliveryStorage));
+      } catch (error) {
+        console.error(
+          "Error cancelling delivery:",
+          error.response?.data || error.message,
+        );
+        return res.status(500).json({ error: "Failed to cancel delivery parcel" });
+      }
+    }
+
+    // POST /api/delivery/rates
+    if (pathname === "/api/delivery/rates" && method === "POST") {
+      const { wilayaId } = parseBody(req.body);
+
+      try {
+        return res.json({
+          success: true,
+          rates: await getDeliveryRates(wilayaId),
+        });
+      } catch (error) {
+        console.error(
+          "Error fetching rates:",
+          error.response?.data || error.message,
+        );
+        return res.status(500).json({ error: "Failed to fetch delivery rates" });
+      }
     }
 
     // GET /api/orders/export/zrexpress
