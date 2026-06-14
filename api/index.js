@@ -6,9 +6,11 @@ const cloudinary = require("cloudinary").v2;
 const sharp = require("sharp");
 const {
   buildParcelData,
+  buildParcelDataAsync,
   cancelDelivery,
   createDeliveryWhenReady,
   createOfficeDeliveryIfNeeded,
+  getDeliveryHubs,
   getDeliveryRates,
   getDeliveryWilayas,
   trackDelivery,
@@ -545,6 +547,19 @@ module.exports = async (req, res) => {
       }
     }
 
+    // GET /api/delivery/hubs
+    if (pathname === "/api/delivery/hubs" && method === "GET") {
+      try {
+        return res.json({ success: true, hubs: await getDeliveryHubs() });
+      } catch (error) {
+        console.error(
+          "Error fetching delivery hubs:",
+          error.response?.data || error.message,
+        );
+        return res.status(500).json({ error: error.message });
+      }
+    }
+
     // POST /api/orders/:id/create-delivery
     if (
       pathname.match(/^\/api\/orders\/.+\/create-delivery$/) &&
@@ -562,7 +577,7 @@ module.exports = async (req, res) => {
         return res.json({
           success: true,
           dryRun: true,
-          parcelData: buildParcelData(
+          parcelData: await buildParcelDataAsync(
             order,
             body.deliveryType || order.deliveryType || "home",
           ),

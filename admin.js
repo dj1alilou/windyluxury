@@ -488,6 +488,55 @@ function renderZrExpressOrders() {
   updateZrExpressButtons();
 }
 
+async function loadZrExpressHubs() {
+  const tbody = document.getElementById("zrexpressHubsTable");
+  if (!tbody) return;
+
+  tbody.innerHTML =
+    '<tr><td colspan="6" class="text-center py-8">Chargement des hubs...</td></tr>';
+
+  try {
+    const response = await fetch(`${CONFIG.API_BASE}/delivery/hubs`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      addZrExpressLog(`Hubs ZR échec: ${getZrExpressErrorText(errorText)}`, "error");
+      tbody.innerHTML =
+        '<tr><td colspan="6" class="text-center py-8 text-red-600">Erreur lors du chargement des hubs</td></tr>';
+      return;
+    }
+
+    const result = await response.json();
+    const hubs = result.hubs || [];
+
+    if (hubs.length === 0) {
+      tbody.innerHTML =
+        '<tr><td colspan="6" class="text-center py-8">Aucun hub trouvé</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = hubs
+      .map(
+        (hub) => `
+      <tr>
+        <td><code>${hub.id}</code></td>
+        <td>${hub.name || "-"}</td>
+        <td>${hub.type || "-"}</td>
+        <td>${hub.city || "-"}</td>
+        <td>${hub.district || "-"}</td>
+        <td>${hub.isPickupPoint ? "Oui" : "Non"}</td>
+      </tr>
+    `,
+      )
+      .join("");
+
+    addZrExpressLog(`${hubs.length} hubs ZR chargés`, "success");
+  } catch (error) {
+    addZrExpressLog(`Hubs ZR erreur réseau: ${error.message}`, "error");
+    tbody.innerHTML =
+      '<tr><td colspan="6" class="text-center py-8 text-red-600">Erreur réseau</td></tr>';
+  }
+}
+
 function toggleSelectAllZrOrders() {
   const selectAllCheckbox = document.getElementById("selectAllZrOrders");
   const checkboxes = document.querySelectorAll(".zrexpress-order-checkbox");
@@ -1410,6 +1459,7 @@ window.sendSelectedZrExpressOrders = sendSelectedZrExpressOrders;
 window.dryRunZrExpressOrder = dryRunZrExpressOrder;
 window.dryRunSelectedZrExpressOrders = dryRunSelectedZrExpressOrders;
 window.renderZrExpressOrders = renderZrExpressOrders;
+window.loadZrExpressHubs = loadZrExpressHubs;
 window.toggleSelectAllZrOrders = toggleSelectAllZrOrders;
 window.trackDeliveryForOrder = trackDeliveryForOrder;
 window.cancelDeliveryForOrder = cancelDeliveryForOrder;

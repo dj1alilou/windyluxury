@@ -10,10 +10,12 @@ const sharp = require("sharp");
 const ExcelJS = require("exceljs");
 const {
   buildParcelData,
+  buildParcelDataAsync,
   cancelDelivery,
   createDeliveryWhenReady,
   createOfficeDeliveryIfNeeded,
   createParcel,
+  getDeliveryHubs,
   getDeliveryRates,
   getDeliveryWilayas,
   saveDeliveryError,
@@ -513,6 +515,15 @@ app.get("/api/delivery/wilayas", async (req, res) => {
   }
 });
 
+app.get("/api/delivery/hubs", async (req, res) => {
+  try {
+    res.json({ success: true, hubs: await getDeliveryHubs() });
+  } catch (error) {
+    console.error("Error fetching hubs:", error.response?.data || error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post("/api/orders/:id/create-delivery", async (req, res) => {
   try {
     const { id } = req.params;
@@ -527,7 +538,7 @@ app.post("/api/orders/:id/create-delivery", async (req, res) => {
       return res.json({
         success: true,
         dryRun: true,
-        parcelData: buildParcelData(
+        parcelData: await buildParcelDataAsync(
           order,
           deliveryType || order.deliveryType || "home",
         ),

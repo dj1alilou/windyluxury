@@ -832,6 +832,13 @@
                 <i class="fas fa-sync-alt"></i> Rafraîchir
               </button>
               <button
+                onclick="loadZrExpressHubs()"
+                class="btn btn-success"
+                title="Charger les hubs ZR Express"
+              >
+                <i class="fas fa-map-marker-alt"></i> Hubs ZR
+              </button>
+              <button
                 onclick="dryRunSelectedZrExpressOrders()"
                 class="btn btn-warning"
                 id="dryRunZrExpressBtn"
@@ -866,6 +873,41 @@
             <div class="stat-card">
               <p class="text-sm text-gray-500">Mode</p>
               <h3 class="text-2xl font-bold" id="zrAutoMode">-</h3>
+            </div>
+          </div>
+
+          <div class="table-container mb-6">
+            <div class="p-4 border-b flex justify-between items-center">
+              <div>
+                <h3 class="text-lg font-bold text-gray-800">Hubs / points de retrait</h3>
+                <p class="text-xs text-gray-500 mt-1">
+                  Copiez l'ID d'un hub avec point de retrait activé dans ZR_EXPRESS_DEFAULT_HUB_ID.
+                </p>
+              </div>
+              <button onclick="loadZrExpressHubs()" class="btn btn-success">
+                <i class="fas fa-sync-alt"></i> Charger
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID hub</th>
+                    <th>Nom</th>
+                    <th>Type</th>
+                    <th>Ville</th>
+                    <th>District</th>
+                    <th>Point retrait</th>
+                  </tr>
+                </thead>
+                <tbody id="zrexpressHubsTable">
+                  <tr>
+                    <td colspan="6" class="text-center py-8">
+                      Cliquez sur "Hubs ZR" pour charger les hubs.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
