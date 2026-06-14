@@ -86,6 +86,8 @@ To configure environment variables in Vercel, navigate to your project dashboard
 
 Environment variables marked for Production will be available during deployment and at runtime. Changes to environment variables require a redeployment to take effect.
 
+If the admin panel shows `ZR Express API credentials are not configured`, add the ZR Express variables above in Vercel Environment Variables and redeploy. The local `.env` file is not automatically available to Vercel production.
+
 ## 4. Local Development Setup
 
 Follow these steps to set up the project locally for development and testing before deploying to Vercel. This setup ensures your local environment mirrors the production environment as closely as possible.
