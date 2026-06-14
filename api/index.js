@@ -9,7 +9,6 @@ const {
   cancelDelivery,
   createDeliveryWhenReady,
   createOfficeDeliveryIfNeeded,
-  findOrder: findStoredOrder,
   getDeliveryRates,
   getDeliveryWilayas,
   trackDelivery,
@@ -110,6 +109,12 @@ async function deleteFromCloudinary(publicId) {
   } catch (error) {
     console.error("Cloudinary delete error:", error);
   }
+}
+
+async function findStoredOrder(orderId) {
+  const database = await connectDB();
+  if (!database) return null;
+  return database.collection("orders").findOne({ id: orderId });
 }
 
 const deliveryStorage = {

@@ -14,7 +14,6 @@ const {
   createDeliveryWhenReady,
   createOfficeDeliveryIfNeeded,
   createParcel,
-  findOrder: findStoredOrder,
   getDeliveryRates,
   getDeliveryWilayas,
   saveDeliveryError,
@@ -163,6 +162,18 @@ const deliveryStorage = {
   },
   findOrder: findStoredOrder,
 };
+
+async function findStoredOrder(orderId) {
+  if (db) {
+    return db.collection("orders").findOne({ id: orderId });
+  }
+
+  const ORDERS_FILE = path.join(__dirname, "data", "orders.json");
+  if (!fs.existsSync(ORDERS_FILE)) return null;
+
+  const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
+  return orders.find((order) => order.id === orderId) || null;
+}
 
 // Default categories
 function defaultCategories() {
