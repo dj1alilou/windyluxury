@@ -588,7 +588,13 @@ function getDeliveryStatusText(status) {
 function getZrExpressErrorText(errorText) {
   try {
     const parsed = JSON.parse(errorText);
-    return parsed.error || parsed.message || errorText;
+    const error = parsed.error || parsed.message;
+    const data = parsed.error?.data || parsed.data;
+    const details = data?.errors
+      ? data.errors.map((item) => item.description || item.message || JSON.stringify(item)).join("; ")
+      : data?.detail || data?.message;
+
+    return [error, details].filter(Boolean).join(" - ") || errorText;
   } catch (error) {
     return errorText || "Erreur inconnue";
   }
