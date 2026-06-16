@@ -593,15 +593,20 @@ module.exports = async (req, res) => {
       }
 
       try {
+        console.log("Creating delivery for order:", order.id, "deliveryType:", body.deliveryType || order.deliveryType || "home");
         const deliveryResult = await createDeliveryWhenReady(
           order,
           deliveryStorage,
           body.deliveryType || order.deliveryType || "home",
         );
 
+        console.log("deliveryResult:", JSON.stringify(deliveryResult, null, 2));
+
         if (!deliveryResult?.success) {
+          console.log("Delivery failed:", JSON.stringify(deliveryResult?.error, null, 2));
           return res.status(500).json({
-            error: deliveryResult?.error || "Failed to create delivery parcel",
+            error: deliveryResult?.error?.message || deliveryResult?.error || "Failed to create delivery parcel",
+            details: deliveryResult?.error?.data || null,
           });
         }
 
