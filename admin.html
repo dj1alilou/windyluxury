@@ -869,41 +869,6 @@
           </div>
 
           <div class="table-container mb-6">
-            <div class="p-4 border-b flex justify-between items-center">
-              <div>
-                <h3 class="text-lg font-bold text-gray-800">Hubs / points de retrait</h3>
-                <p class="text-xs text-gray-500 mt-1">
-                  Copiez l'ID d'un hub avec point de retrait activé dans ZR_EXPRESS_DEFAULT_HUB_ID.
-                </p>
-              </div>
-              <button onclick="loadZrExpressHubs()" class="btn btn-success">
-                <i class="fas fa-sync-alt"></i> Charger
-              </button>
-            </div>
-            <div class="overflow-x-auto">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID hub</th>
-                    <th>Nom</th>
-                    <th>Type</th>
-                    <th>Ville</th>
-                    <th>District</th>
-                    <th>Point retrait</th>
-                  </tr>
-                </thead>
-                <tbody id="zrexpressHubsTable">
-                  <tr>
-                    <td colspan="6" class="text-center py-8">
-                      Cliquez sur "Hubs ZR" pour charger les hubs.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="table-container mb-6">
             <div class="p-4 border-b flex justify-between items-center bg-gray-50">
               <div class="flex items-center gap-2">
                 <input
@@ -936,6 +901,41 @@
                 <tbody id="zrexpressOrdersTable">
                   <tr>
                     <td colspan="8" class="text-center py-8">Chargement...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="table-container mb-6">
+            <div class="p-4 border-b flex justify-between items-center">
+              <div>
+                <h3 class="text-lg font-bold text-gray-800">Hubs / points de retrait</h3>
+                <p class="text-xs text-gray-500 mt-1">
+                  Copiez l'ID d'un hub avec point de retrait activé dans ZR_EXPRESS_DEFAULT_HUB_ID.
+                </p>
+              </div>
+              <button onclick="loadZrExpressHubs()" class="btn btn-success">
+                <i class="fas fa-sync-alt"></i> Charger
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID hub</th>
+                    <th>Nom</th>
+                    <th>Type</th>
+                    <th>Ville</th>
+                    <th>District</th>
+                    <th>Point retrait</th>
+                  </tr>
+                </thead>
+                <tbody id="zrexpressHubsTable">
+                  <tr>
+                    <td colspan="6" class="text-center py-8">
+                      Cliquez sur "Hubs ZR" pour charger les hubs.
+                    </td>
                   </tr>
                 </tbody>
               </table>
