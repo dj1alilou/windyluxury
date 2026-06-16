@@ -473,9 +473,6 @@ function renderZrExpressOrders() {
       <td>${(order.total || 0).toLocaleString()} DA</td>
       <td><span class="status-badge status-${order.deliveryStatus || "pending"}">${getDeliveryStatusText(order.deliveryStatus)}</span></td>
       <td>
-        <button onclick="dryRunZrExpressOrder('${order.id}')" class="btn btn-warning" style="padding: 4px 8px; font-size: 12px;">
-          <i class="fas fa-eye"></i>
-        </button>
         <button onclick="sendZrExpressOrder('${order.id}')" class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;">
           <i class="fas fa-paper-plane"></i>
         </button>
