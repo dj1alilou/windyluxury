@@ -673,6 +673,7 @@ async function sendZrExpressOrders(selectedOrders) {
             `Commande ${order.id?.slice(-6)} envoyée: ${result.trackingNumber || "ok"}`,
             "success",
           );
+          showZrExpressSuccessModal(order.id, result.trackingNumber);
         } else {
           const errorText = await response.text();
           addZrExpressLog(
@@ -1169,6 +1170,17 @@ async function updateOrderStatus(orderId, status) {
   }
 }
 
+function showZrExpressSuccessModal(orderId, trackingNumber) {
+  const trackingEl = document.getElementById("zrExpressTrackingNumber");
+  const orderEl = document.getElementById("zrExpressOrderId");
+
+  if (trackingEl) trackingEl.textContent = trackingNumber || "Non disponible";
+  if (orderEl) orderEl.textContent = orderId || "Non disponible";
+
+  const modal = document.getElementById("zrExpressSuccessModal");
+  if (modal) modal.classList.add("active");
+}
+
 async function createDeliveryForOrder(orderId, deliveryType) {
   try {
     const response = await fetch(
@@ -1181,9 +1193,10 @@ async function createDeliveryForOrder(orderId, deliveryType) {
     );
 
     if (response.ok) {
+      const result = await response.json();
       await loadOrders();
       updateDashboard();
-      alert("Livraison créée avec succès");
+      showZrExpressSuccessModal(orderId, result.trackingNumber);
       return;
     }
 
