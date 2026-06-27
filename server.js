@@ -13,7 +13,6 @@ const {
   buildParcelDataAsync,
   cancelDelivery,
   createDeliveryWhenReady,
-  createOfficeDeliveryIfNeeded,
   createParcel,
   getDeliveryHubs,
   getDeliveryRates,
@@ -448,17 +447,6 @@ app.post("/api/orders", async (req, res) => {
       fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
     }
 
-    const autoDelivery = await createOfficeDeliveryIfNeeded(order, deliveryStorage);
-    if (autoDelivery && !autoDelivery.success) {
-      order.deliveryStatus = "failed";
-      order.deliveryError = autoDelivery.error;
-    } else if (autoDelivery?.success) {
-      order.deliveryTrackingNumber = autoDelivery.delivery.trackingNumber;
-      order.deliveryStatus = "created";
-      order.deliveryCreatedAt = new Date().toISOString();
-      order.deliveryApiResponse = autoDelivery.delivery.response;
-    }
-
     console.log("Order saved successfully:", order.id);
     res.status(201).json(order);
   } catch (error) {
@@ -481,23 +469,7 @@ app.put("/api/orders/:id/status", async (req, res) => {
         );
     }
 
-    if (status === "confirmed" || status === "processing") {
-      const order = await findStoredOrder(id);
-
-      if (order && !order.deliveryTrackingNumber) {
-        const deliveryResult = await createDeliveryWhenReady(
-          order,
-          deliveryStorage,
-          order.deliveryType || "home",
-        );
-
-        if (deliveryResult?.success) {
-          res.locals.delivery = deliveryResult.delivery;
-        }
-      }
-
-      res.json({ success: true, delivery: res.locals.delivery || null });
-    }
+    res.json({ success: true, delivery: res.locals.delivery || null });
   } catch (error) {
     console.error("Error updating order status:", error);
     res.status(500).json({ error: error.message });
