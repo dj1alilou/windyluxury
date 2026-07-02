@@ -9,7 +9,6 @@ const {
   buildParcelDataAsync,
   cancelDelivery,
   createDeliveryWhenReady,
-  createOfficeDeliveryIfNeeded,
   getDeliveryHubs,
   getDeliveryRates,
   getDeliveryWilayas,
@@ -483,17 +482,6 @@ module.exports = async (req, res) => {
         await database.collection("orders").insertOne(order);
       }
 
-      const autoDelivery = await createOfficeDeliveryIfNeeded(order, deliveryStorage);
-      if (autoDelivery && !autoDelivery.success) {
-        order.deliveryStatus = "failed";
-        order.deliveryError = autoDelivery.error;
-      } else if (autoDelivery?.success) {
-        order.deliveryTrackingNumber = autoDelivery.delivery.trackingNumber;
-        order.deliveryStatus = "created";
-        order.deliveryCreatedAt = new Date().toISOString();
-        order.deliveryApiResponse = autoDelivery.delivery.response;
-      }
-
       return res.status(201).json(order);
     }
 
@@ -513,22 +501,6 @@ module.exports = async (req, res) => {
             },
           },
         );
-      }
-
-      if (body.status === "confirmed" || body.status === "processing") {
-        const order = await findStoredOrder(id);
-
-        if (order && !order.deliveryTrackingNumber) {
-          const deliveryResult = await createDeliveryWhenReady(
-            order,
-            deliveryStorage,
-            order.deliveryType || "home",
-          );
-
-          if (deliveryResult?.success) {
-            return res.json({ success: true, delivery: deliveryResult.delivery });
-          }
-        }
       }
 
       return res.json({ success: true });
