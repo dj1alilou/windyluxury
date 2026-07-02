@@ -598,8 +598,22 @@ function getZrExpressErrorText(errorText) {
 }
 
 async function sendZrExpressOrder(orderId) {
-  const order = orders.find((item) => item.id === orderId);
-  if (!order) return;
+  let order = orders.find((item) => item.id === orderId);
+  if (!order) {
+    try {
+      const res = await fetch(`${CONFIG.API_BASE}/orders`);
+      if (res.ok) {
+        orders = await res.json();
+        order = orders.find((item) => item.id === orderId);
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
+  if (!order) {
+    alert("Commande introuvable");
+    return;
+  }
 
   if (!confirm(`Envoyer la commande ${order.id?.slice(-6)} à ZR Express ?`)) {
     return;
