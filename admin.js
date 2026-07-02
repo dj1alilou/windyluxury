@@ -191,6 +191,13 @@ async function loadProducts() {
     const response = await fetch(`${CONFIG.API_BASE}/products`);
     if (response.ok) {
       products = await response.json();
+      
+      // Sort products by createdAt (newest first)
+      products.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB - dateA;
+      });
     }
   } catch (error) {
     console.error("Error loading products:", error);

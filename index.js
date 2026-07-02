@@ -241,6 +241,13 @@ async function loadProductsFromApi() {
     if (!response.ok) throw new Error("Failed to fetch products");
 
     allProducts = await response.json();
+    
+    // Sort products by createdAt (newest first)
+    allProducts.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0);
+      const dateB = new Date(b.createdAt || 0);
+      return dateB - dateA;
+    });
 
     console.log(`✅ ${allProducts.length} produits chargés depuis l'API`);
 
@@ -290,6 +297,14 @@ async function loadProductsFromApi() {
     try {
       console.log("⚠️ Loading products from IndexedDB...");
       allProducts = await getAllFromIndexedDB("products");
+      
+      // Sort products by createdAt (newest first)
+      allProducts.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB - dateA;
+      });
+      
       if (allProducts && allProducts.length > 0) {
         resetCategories();
         allProducts.forEach((product) => {

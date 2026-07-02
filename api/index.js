@@ -413,8 +413,14 @@ module.exports = async (req, res) => {
 
     if (pathname === "/api/products" && method === "GET") {
       const database = await connectDB();
+      const statusFilter = url.searchParams.get("status");
       if (database) {
-        const products = await database.collection("products").find().toArray();
+        const query = statusFilter ? { status: statusFilter } : {};
+        const products = await database
+          .collection("products")
+          .find(query)
+          .sort({ createdAt: -1 })
+          .toArray();
         return res.json(products);
       }
       return res.json([]);
